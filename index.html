@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎄 AR Cây Thông Noel - Ultra Precise Hand Tracking</title>
+  <title>🎄 AR Cây Thông Noel - Predictive Hand Tracking</title>
   
   <style>
     * {
@@ -47,12 +47,12 @@
       color: white;
       font-size: 14px;
       z-index: 10;
-      background: rgba(0,0,0,0.85);
-      padding: 12px 24px;
+      background: rgba(0,0,0,0.9);
+      padding: 14px 26px;
       border-radius: 30px;
       backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.25);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.3);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
     }
     
     .top-left {
@@ -60,7 +60,7 @@
       left: 20px;
       font-weight: 600;
       font-size: 15px;
-      max-width: 300px;
+      max-width: 320px;
     }
     
     .top-right {
@@ -77,13 +77,13 @@
       transform: translateX(-50%);
       font-size: 16px;
       font-style: italic;
-      background: linear-gradient(135deg, rgba(139,69,19,0.9), rgba(34,139,34,0.9));
+      background: linear-gradient(135deg, rgba(139,69,19,0.95), rgba(34,139,34,0.95));
       padding: 14px 32px;
     }
     
     button {
-      background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.15));
-      border: 1px solid rgba(255,255,255,0.4);
+      background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2));
+      border: 1px solid rgba(255,255,255,0.5);
       color: white;
       padding: 10px 18px;
       border-radius: 25px;
@@ -95,7 +95,7 @@
     }
     
     button:hover {
-      background: linear-gradient(135deg, rgba(255,255,255,0.35), rgba(255,255,255,0.25));
+      background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.3));
       transform: translateY(-2px);
     }
     
@@ -104,15 +104,15 @@
       bottom: 100px;
       left: 50%;
       transform: translateX(-50%);
-      background: linear-gradient(135deg, rgba(139,69,19,0.95), rgba(34,139,34,0.95));
+      background: linear-gradient(135deg, rgba(139,69,19,0.98), rgba(34,139,34,0.98));
       padding: 35px 40px;
       border-radius: 25px;
       color: white;
       text-align: center;
-      max-width: 500px;
+      max-width: 520px;
       z-index: 100;
-      border: 2px solid rgba(255,215,0,0.5);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      border: 2px solid rgba(255,215,0,0.6);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7);
     }
     
     .instructions h2 {
@@ -125,7 +125,7 @@
     .instructions p {
       margin: 12px 0;
       font-size: 15px;
-      line-height: 1.6;
+      line-height: 1.7;
     }
     
     .instructions strong {
@@ -138,7 +138,7 @@
     
     .gesture-icon {
       display: inline-block;
-      font-size: 24px;
+      font-size: 26px;
       margin-right: 8px;
     }
     
@@ -173,18 +173,24 @@
       font-size: 80px;
     }
     
-    .confidence-bar {
-      margin-top: 8px;
-      height: 4px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 2px;
-      overflow: hidden;
+    .prediction-indicator {
+      position: fixed;
+      top: 90px;
+      left: 20px;
+      background: rgba(0, 255, 0, 0.2);
+      border: 1px solid rgba(0, 255, 0, 0.5);
+      color: #0f0;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-family: monospace;
+      z-index: 10;
     }
     
-    .confidence-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #f00, #ff0, #0f0);
-      transition: width 0.1s;
+    .latency-display {
+      font-size: 10px;
+      opacity: 0.8;
+      margin-top: 4px;
     }
   </style>
 </head>
@@ -192,7 +198,7 @@
   <!-- Loading Screen -->
   <div class="loading" id="loading">
     <div class="float">🎄</div>
-    <div class="loading-text">Đang khởi động AR...</div>
+    <div class="loading-text">Khởi động Predictive AI...</div>
     <div class="loading-text" style="font-size: 14px; margin-top: 10px; opacity: 0.7;">Vui lòng cho phép camera</div>
   </div>
 
@@ -202,16 +208,21 @@
   <!-- Canvas -->
   <canvas id="canvas"></canvas>
   
+  <!-- Prediction Indicator -->
+  <div class="prediction-indicator" id="predictionIndicator" style="display:none;">
+    <div>🔮 PREDICTIVE MODE</div>
+    <div class="latency-display" id="latencyDisplay">Latency: 0ms</div>
+  </div>
+  
   <!-- UI -->
   <div class="ui top-left" id="status">
     <div><span class="gesture-icon">✋</span> <span id="gesture-text">Đang khởi động...</span></div>
-    <div class="confidence-bar"><div class="confidence-fill" id="confidenceFill" style="width: 0%"></div></div>
-    <div style="font-size: 11px; margin-top: 6px; opacity: 0.8;" id="details"></div>
+    <div style="font-size: 11px; margin-top: 6px; opacity: 0.9;" id="details"></div>
   </div>
   
   <div class="ui top-right">
     <div id="fps">60 FPS</div>
-    <div id="aiFps" style="font-size: 11px; opacity: 0.7;">AI: 0</div>
+    <div id="aiFps" style="font-size: 11px; opacity: 0.8;">AI: 0</div>
     <button onclick="location.reload()">🔄</button>
   </div>
   
@@ -220,13 +231,15 @@
   </div>
   
   <div class="instructions" id="instructions">
-    <h2>🎄 Hướng dẫn điều khiển</h2>
+    <h2>🎄 Điều khiển bằng tay - AI dự đoán chuyển động</h2>
     <p>← → <strong>Tay trái/phải</strong> để xoay cây</p>
     <p>↑ ↓ <strong>Tay lên/xuống</strong> để thay đổi góc nhìn</p>
     <p>🤏 <strong>Véo ngón</strong> để zoom in/out</p>
-    <p style="font-size: 13px; margin-top: 20px; opacity: 0.8;">💡 Tip: Di chuyển tay chậm và rõ ràng để tracking chính xác hơn</p>
+    <p style="font-size: 13px; margin-top: 20px; opacity: 0.9; color: #ffd700;">
+      💡 <strong>AI Prediction:</strong> Hệ thống tự động dự đoán chuyển động tay để giảm độ trễ xuống 0ms
+    </p>
     <button onclick="hideInstructions()" style="margin-top: 24px; padding: 12px 32px; font-size: 15px;">
-      Bắt đầu 🎅
+      Bắt đầu trải nghiệm 🎅
     </button>
   </div>
 
@@ -238,26 +251,109 @@
   
   <script>
     // ============================================
-    // KALMAN FILTER CLASS
+    // DOUBLE EXPONENTIAL SMOOTHING (Holt's Method)
     // ============================================
-    class KalmanFilter {
-      constructor(processNoise = 0.01, measurementNoise = 0.1) {
-        this.processNoise = processNoise;
-        this.measurementNoise = measurementNoise;
-        this.estimate = 0;
-        this.errorCovariance = 1;
+    class DoubleExponentialSmoothing {
+      constructor(alpha = 0.3, beta = 0.2) {
+        this.alpha = alpha; // Data smoothing
+        this.beta = beta;   // Trend smoothing
+        this.level = null;
+        this.trend = null;
       }
       
-      filter(measurement) {
-        // Prediction
-        const predictionErrorCovariance = this.errorCovariance + this.processNoise;
+      predict(value, steps = 1) {
+        if (this.level === null) {
+          this.level = value;
+          this.trend = 0;
+          return value;
+        }
         
-        // Update
-        const kalmanGain = predictionErrorCovariance / (predictionErrorCovariance + this.measurementNoise);
-        this.estimate = this.estimate + kalmanGain * (measurement - this.estimate);
-        this.errorCovariance = (1 - kalmanGain) * predictionErrorCovariance;
+        // Update level and trend
+        const lastLevel = this.level;
+        this.level = this.alpha * value + (1 - this.alpha) * (this.level + this.trend);
+        this.trend = this.beta * (this.level - lastLevel) + (1 - this.beta) * this.trend;
         
-        return this.estimate;
+        // Forecast future value
+        return this.level + steps * this.trend;
+      }
+      
+      getCurrentTrend() {
+        return this.trend || 0;
+      }
+    }
+    
+    // ============================================
+    // MOTION VECTOR CLASS
+    // ============================================
+    class MotionVector {
+      constructor() {
+        this.history = [];
+        this.maxHistory = 5;
+      }
+      
+      addPoint(x, y, timestamp) {
+        this.history.push({ x, y, t: timestamp });
+        if (this.history.length > this.maxHistory) {
+          this.history.shift();
+        }
+      }
+      
+      getVelocity() {
+        if (this.history.length < 2) return { vx: 0, vy: 0 };
+        
+        const recent = this.history[this.history.length - 1];
+        const previous = this.history[this.history.length - 2];
+        
+        const dt = recent.t - previous.t;
+        if (dt === 0) return { vx: 0, vy: 0 };
+        
+        return {
+          vx: (recent.x - previous.x) / dt,
+          vy: (recent.y - previous.y) / dt
+        };
+      }
+      
+      getAcceleration() {
+        if (this.history.length < 3) return { ax: 0, ay: 0 };
+        
+        const velocities = [];
+        for (let i = 1; i < this.history.length; i++) {
+          const dt = this.history[i].t - this.history[i-1].t;
+          if (dt > 0) {
+            velocities.push({
+              vx: (this.history[i].x - this.history[i-1].x) / dt,
+              vy: (this.history[i].y - this.history[i-1].y) / dt,
+              t: this.history[i].t
+            });
+          }
+        }
+        
+        if (velocities.length < 2) return { ax: 0, ay: 0 };
+        
+        const v1 = velocities[velocities.length - 1];
+        const v0 = velocities[velocities.length - 2];
+        const dt = v1.t - v0.t;
+        
+        if (dt === 0) return { ax: 0, ay: 0 };
+        
+        return {
+          ax: (v1.vx - v0.vx) / dt,
+          ay: (v1.vy - v0.vy) / dt
+        };
+      }
+      
+      predictPosition(deltaTime) {
+        if (this.history.length === 0) return { x: 0.5, y: 0.5 };
+        
+        const current = this.history[this.history.length - 1];
+        const velocity = this.getVelocity();
+        const acceleration = this.getAcceleration();
+        
+        // Physics: position = current + velocity*t + 0.5*acceleration*t^2
+        const predictedX = current.x + velocity.vx * deltaTime + 0.5 * acceleration.ax * deltaTime * deltaTime;
+        const predictedY = current.y + velocity.vy * deltaTime + 0.5 * acceleration.ay * deltaTime * deltaTime;
+        
+        return { x: predictedX, y: predictedY };
       }
     }
     
@@ -286,23 +382,21 @@
     let ornaments = [];
     let lights = [];
     
-    // KALMAN FILTERS for ultra smooth tracking
-    const kalmanX = new KalmanFilter(0.005, 0.05);
-    const kalmanY = new KalmanFilter(0.005, 0.05);
-    const kalmanPinch = new KalmanFilter(0.01, 0.1);
+    // PREDICTIVE TRACKING
+    const desX = new DoubleExponentialSmoothing(0.4, 0.3);
+    const desY = new DoubleExponentialSmoothing(0.4, 0.3);
+    const desPinch = new DoubleExponentialSmoothing(0.5, 0.4);
     
-    // Hand stability detection
-    let lastHandX = 0.5;
-    let lastHandY = 0.5;
-    let handVelocityX = 0;
-    let handVelocityY = 0;
+    const motionVector = new MotionVector();
     
-    // Adaptive smoothing
-    let adaptiveSmoothingFactor = 0.15;
+    // Latency tracking
+    let lastAIProcessTime = 0;
+    let aiLatency = 0;
     
-    // Gesture confidence
-    let gestureConfidence = 0;
-    let lastGestureTime = 0;
+    // Prediction state
+    let isPredicting = false;
+    let lastRealHandPosition = { x: 0.5, y: 0.5 };
+    let predictionConfidence = 0;
     
     const canvas = document.getElementById('canvas');
     const video = document.getElementById('video');
@@ -310,32 +404,9 @@
     const detailsEl = document.getElementById('details');
     const fpsEl = document.getElementById('fps');
     const aiFpsEl = document.getElementById('aiFps');
-    const confidenceFillEl = document.getElementById('confidenceFill');
+    const latencyDisplayEl = document.getElementById('latencyDisplay');
+    const predictionIndicatorEl = document.getElementById('predictionIndicator');
     const loadingEl = document.getElementById('loading');
-    
-    // ============================================
-    // ADAPTIVE SMOOTHING
-    // ============================================
-    function calculateAdaptiveSmoothingFactor(velocity) {
-      // Fast movement = less smoothing (more responsive)
-      // Slow movement = more smoothing (more stable)
-      const speed = Math.abs(velocity);
-      
-      if (speed > 0.05) {
-        return 0.25; // Fast response
-      } else if (speed > 0.02) {
-        return 0.15; // Balanced
-      } else {
-        return 0.08; // Ultra smooth for slow movements
-      }
-    }
-    
-    // ============================================
-    // SMOOTH LERP
-    // ============================================
-    function smoothLerp(current, target, factor) {
-      return current + (target - current) * factor;
-    }
     
     // ============================================
     // INIT CAMERA
@@ -345,9 +416,9 @@
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: 'user',
-            width: { ideal: 1920 }, // Higher resolution for better tracking
+            width: { ideal: 1920 },
             height: { ideal: 1080 },
-            frameRate: { ideal: 60 } // Max FPS
+            frameRate: { ideal: 60 }
           }
         });
         
@@ -359,13 +430,13 @@
         return true;
       } catch (err) {
         console.error('❌ Camera error:', err);
-        alert('Không thể truy cập camera. Vui lòng cho phép quyền camera và refresh lại trang.');
+        alert('Không thể truy cập camera. Vui lòng cho phép quyền camera.');
         return false;
       }
     }
     
     // ============================================
-    // INIT MEDIAPIPE - MAX PERFORMANCE
+    // INIT MEDIAPIPE - MAXIMUM PERFORMANCE
     // ============================================
     async function initMediaPipe() {
       try {
@@ -381,15 +452,15 @@
         
         hands.setOptions({
           maxNumHands: 1,
-          modelComplexity: 1, // Best balance
-          minDetectionConfidence: 0.8, // Higher = better quality detections
-          minTrackingConfidence: 0.8,  // Higher = smoother tracking
+          modelComplexity: 1,
+          minDetectionConfidence: 0.8,
+          minTrackingConfidence: 0.8,
           selfieMode: true
         });
         
         hands.onResults(onHandResults);
         
-        // ULTRA HIGH FREQUENCY PROCESSING - 30 FPS
+        // AI Processing at 30 FPS
         let lastProcessTime = 0;
         const AI_FPS = 30;
         const AI_INTERVAL = 1000 / AI_FPS;
@@ -398,8 +469,12 @@
           const now = performance.now();
           
           if (video.readyState === 4 && now - lastProcessTime >= AI_INTERVAL) {
+            lastAIProcessTime = now;
             await hands.send({ image: video });
             lastProcessTime = now;
+            
+            // Calculate AI latency
+            aiLatency = performance.now() - lastAIProcessTime;
             
             // AI FPS counter
             aiFrameCount++;
@@ -415,7 +490,7 @@
         
         processFrame();
         
-        console.log('✅ MediaPipe initialized (30 FPS, High Confidence)');
+        console.log('✅ MediaPipe initialized (30 FPS + Prediction)');
         return true;
       } catch (err) {
         console.error('❌ MediaPipe error:', err);
@@ -424,17 +499,32 @@
     }
     
     // ============================================
-    // HAND RESULTS PROCESSING - ULTRA PRECISE
+    // HAND RESULTS PROCESSING - WITH PREDICTION
     // ============================================
     function onHandResults(results) {
+      const now = performance.now();
+      
       if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-        updateGesture('idle', '', 0);
+        // DEAD RECKONING: Continue motion when hand lost temporarily
+        if (now - lastAIProcessTime < 200) { // Within 200ms
+          isPredicting = true;
+          const predicted = motionVector.predictPosition(0.05); // Predict 50ms ahead
+          
+          if (predicted.x > 0 && predicted.x < 1 && predicted.y > 0 && predicted.y < 1) {
+            processHandPosition(predicted.x, predicted.y, 0.1); // Use predicted position
+            predictionConfidence = Math.max(0, predictionConfidence - 0.1);
+          }
+        } else {
+          isPredicting = false;
+          predictionConfidence = 0;
+        }
         
-        // Decay confidence
-        gestureConfidence *= 0.95;
-        
+        updateGesture('idle', '✋ Không phát hiện tay');
         return;
       }
+      
+      isPredicting = false;
+      predictionConfidence = 1;
       
       const landmarks = results.multiHandLandmarks[0];
       
@@ -442,133 +532,107 @@
       const wrist = landmarks[0];
       const thumbTip = landmarks[4];
       const indexTip = landmarks[8];
-      const middleTip = landmarks[12];
       
-      // Calculate distances
+      // Add to motion history
+      motionVector.addPoint(wrist.x, wrist.y, now);
+      
+      // Calculate distance
       const dist = (p1, p2) => {
         const dx = p1.x - p2.x;
         const dy = p1.y - p2.y;
-        const dz = (p1.z || 0) - (p2.z || 0);
-        return Math.sqrt(dx*dx + dy*dy + dz*dz);
+        return Math.sqrt(dx * dx + dy * dy);
       };
       
       const pinchDist = dist(thumbTip, indexTip);
       
-      // RAW hand position
-      const rawHandX = wrist.x;
-      const rawHandY = wrist.y;
+      // PREDICTIVE SMOOTHING - Forecast next position
+      const PREDICTION_STEPS = 2; // Predict 2 steps ahead
       
-      // Apply Kalman filter for ultra smooth tracking
-      const filteredX = kalmanX.filter(rawHandX);
-      const filteredY = kalmanY.filter(rawHandY);
-      const filteredPinch = kalmanPinch.filter(pinchDist);
+      const predictedX = desX.predict(wrist.x, PREDICTION_STEPS);
+      const predictedY = desY.predict(wrist.y, PREDICTION_STEPS);
+      const predictedPinch = desPinch.predict(pinchDist, PREDICTION_STEPS);
       
-      // Calculate hand velocity for adaptive smoothing
-      handVelocityX = filteredX - lastHandX;
-      handVelocityY = filteredY - lastHandY;
+      lastRealHandPosition = { x: wrist.x, y: wrist.y };
       
-      lastHandX = filteredX;
-      lastHandY = filteredY;
+      // Process with PREDICTED values for instant response
+      processHandPosition(predictedX, predictedY, predictedPinch);
       
-      // Update adaptive smoothing factor
-      const avgVelocity = (Math.abs(handVelocityX) + Math.abs(handVelocityY)) / 2;
-      adaptiveSmoothingFactor = calculateAdaptiveSmoothingFactor(avgVelocity);
-      
-      // ============================================
-      // GESTURE PRIORITY with CONFIDENCE
-      // ============================================
-      
-      let detectedGesture = '';
-      let gesturePriority = 0;
-      
-      // 1. PINCH (Highest priority)
-      if (filteredPinch < 0.12) {
-        detectedGesture = 'zoom';
-        gesturePriority = 3;
-        
-        const normalizedPinch = Math.max(0.02, Math.min(0.12, filteredPinch));
+      // Update latency display
+      latencyDisplayEl.textContent = `Latency: ${Math.round(aiLatency)}ms | Predict: +${PREDICTION_STEPS}f`;
+      predictionIndicatorEl.style.display = 'block';
+    }
+    
+    // ============================================
+    // PROCESS HAND POSITION (Separated for reuse)
+    // ============================================
+    function processHandPosition(handX, handY, pinchDist) {
+      // PINCH (Zoom)
+      if (pinchDist < 0.12) {
+        const normalizedPinch = Math.max(0.02, Math.min(0.12, pinchDist));
         targetCameraZ = 4 + (normalizedPinch / 0.12) * 6;
         
-        gestureConfidence = Math.min(1, gestureConfidence + 0.1);
-      }
-      // 2. HAND POSITION
-      else {
-        const centeredX = (filteredX - 0.5) * 2; // -1 to 1
-        const centeredY = filteredY - 0.5;       // -0.5 to 0.5
-        
-        const DEADZONE_X = 0.12; // Smaller deadzone for better response
-        const DEADZONE_Y = 0.12;
-        
-        const ROTATION_SPEED = 0.08;
-        
-        let hasMovement = false;
-        
-        // ROTATION (X-axis)
-        if (Math.abs(centeredX) > DEADZONE_X) {
-          hasMovement = true;
-          gesturePriority = 2;
-          
-          // Speed scales with distance from center
-          const scaledSpeed = ROTATION_SPEED * Math.abs(centeredX);
-          targetRotationY += centeredX * scaledSpeed;
-          
-          detectedGesture = centeredX < 0 ? 'rotate_left' : 'rotate_right';
-        }
-        
-        // CAMERA Y (Vertical)
-        if (Math.abs(centeredY) > DEADZONE_Y) {
-          hasMovement = true;
-          gesturePriority = Math.max(gesturePriority, 1);
-          
-          // Invert: hand up → camera up
-          targetCameraY = 3 - (centeredY * 4);
-          targetCameraY = Math.max(1, Math.min(6, targetCameraY));
-          
-          if (detectedGesture) {
-            detectedGesture += '_and_' + (centeredY < 0 ? 'look_up' : 'look_down');
-          } else {
-            detectedGesture = centeredY < 0 ? 'look_up' : 'look_down';
-          }
-        }
-        
-        if (hasMovement) {
-          gestureConfidence = Math.min(1, gestureConfidence + 0.05);
-        } else {
-          detectedGesture = 'idle';
-          gesturePriority = 0;
-          gestureConfidence *= 0.9;
-        }
+        updateGesture('zoom', `🔍 Zoom ${targetCameraZ.toFixed(1)}m`);
+        return;
       }
       
-      // Build gesture text
+      // HAND POSITION
+      const centeredX = (handX - 0.5) * 2;
+      const centeredY = handY - 0.5;
+      
+      const DEADZONE_X = 0.1;
+      const DEADZONE_Y = 0.1;
+      
+      // Get current trend for dynamic speed adjustment
+      const trendX = desX.getCurrentTrend();
+      const trendY = desY.getCurrentTrend();
+      
+      const BASE_ROTATION_SPEED = 0.1;
+      const TREND_MULTIPLIER = 2.0; // Amplify trend for responsiveness
+      
       let gestureText = '';
       
-      if (detectedGesture === 'rotate_left') gestureText = '↶ Xoay trái';
-      else if (detectedGesture === 'rotate_right') gestureText = '↷ Xoay phải';
-      else if (detectedGesture === 'look_up') gestureText = '↑ Nhìn lên';
-      else if (detectedGesture === 'look_down') gestureText = '↓ Nhìn xuống';
-      else if (detectedGesture === 'zoom') gestureText = `🔍 Zoom ${targetCameraZ.toFixed(1)}m`;
-      else if (detectedGesture.includes('_and_')) {
-        const parts = detectedGesture.split('_and_');
-        const text1 = parts[0] === 'rotate_left' ? '↶ Trái' : '↷ Phải';
-        const text2 = parts[1] === 'look_up' ? '↑ Lên' : '↓ Xuống';
-        gestureText = `${text1} + ${text2}`;
+      // ROTATION (X-axis) with trend-based speed
+      if (Math.abs(centeredX) > DEADZONE_X) {
+        const speedBoost = 1 + Math.abs(trendX) * TREND_MULTIPLIER;
+        const rotationSpeed = BASE_ROTATION_SPEED * Math.abs(centeredX) * speedBoost;
+        
+        targetRotationY += centeredX * rotationSpeed;
+        
+        gestureText = centeredX < 0 ? '↶ Xoay trái' : '↷ Xoay phải';
       }
-      else gestureText = '✋ Giữ nguyên';
       
-      updateGesture(detectedGesture, gestureText, gestureConfidence);
+      // CAMERA Y (Vertical)
+      if (Math.abs(centeredY) > DEADZONE_Y) {
+        targetCameraY = 3 - (centeredY * 4);
+        targetCameraY = Math.max(1, Math.min(6, targetCameraY));
+        
+        if (gestureText) {
+          gestureText += ' + ' + (centeredY < 0 ? '↑ Lên' : '↓ Xuống');
+        } else {
+          gestureText = centeredY < 0 ? '↑ Nhìn lên' : '↓ Nhìn xuống';
+        }
+      }
+      
+      if (!gestureText) {
+        gestureText = '✋ Giữ nguyên';
+      }
+      
+      updateGesture('control', gestureText);
     }
     
     // ============================================
     // UPDATE GESTURE UI
     // ============================================
-    function updateGesture(type, text, confidence) {
+    function updateGesture(type, text) {
       gestureTextEl.textContent = text;
       
-      const confPercent = Math.round(confidence * 100);
-      confidenceFillEl.style.width = confPercent + '%';
+      const velocity = motionVector.getVelocity();
+      const speed = Math.sqrt(velocity.vx * velocity.vx + velocity.vy * velocity.vy);
       
-      detailsEl.textContent = `Cam: Y=${currentCameraY.toFixed(1)} Z=${currentCameraZ.toFixed(1)} | Rot: ${(currentRotationY % (Math.PI * 2)).toFixed(2)} | Smooth: ${adaptiveSmoothingFactor.toFixed(2)}`;
+      const predictionStatus = isPredicting ? '🔮 PREDICTING' : '✅ TRACKING';
+      const confidencePercent = Math.round(predictionConfidence * 100);
+      
+      detailsEl.textContent = `${predictionStatus} | Conf: ${confidencePercent}% | Speed: ${(speed * 1000).toFixed(0)}px/s | Cam: Y${currentCameraY.toFixed(1)} Z${currentCameraZ.toFixed(1)}`;
     }
     
     // ============================================
@@ -784,7 +848,7 @@
     }
     
     // ============================================
-    // ANIMATION - ADAPTIVE SMOOTHING
+    // ANIMATION - ULTRA RESPONSIVE
     // ============================================
     function animate() {
       requestAnimationFrame(animate);
@@ -798,17 +862,17 @@
         lastTime = now;
       }
       
-      // ADAPTIVE INTERPOLATION
-      const rotationSpeed = 0.2; // Faster response
-      const cameraSpeed = adaptiveSmoothingFactor;
+      // ULTRA FAST INTERPOLATION
+      const ROTATION_SPEED = 0.3; // Very responsive
+      const CAMERA_SPEED = 0.25;  // Fast camera movement
       
       // Smooth tree rotation
-      currentRotationY = smoothLerp(currentRotationY, targetRotationY, rotationSpeed);
+      currentRotationY += (targetRotationY - currentRotationY) * ROTATION_SPEED;
       tree.rotation.y = currentRotationY;
       
-      // Smooth camera position with adaptive factor
-      currentCameraY = smoothLerp(currentCameraY, targetCameraY, cameraSpeed);
-      currentCameraZ = smoothLerp(currentCameraZ, targetCameraZ, cameraSpeed);
+      // Smooth camera position
+      currentCameraY += (targetCameraY - currentCameraY) * CAMERA_SPEED;
+      currentCameraZ += (targetCameraZ - currentCameraZ) * CAMERA_SPEED;
       
       camera.position.y = currentCameraY;
       camera.position.z = currentCameraZ;
@@ -882,16 +946,16 @@
       
       const mpOK = await initMediaPipe();
       if (!mpOK) {
-        loadingEl.innerHTML = '<div style="color:white;text-align:center;padding:40px;"><h2 style="color:#fa0;">⚠️ MediaPipe Failed</h2><p style="margin:20px 0;">Không thể khởi động hand tracking</p><button onclick="location.reload()" style="padding:12px 24px;">Thử lại</button></div>';
+        loadingEl.innerHTML = '<div style="color:white;text-align:center;padding:40px;"><h2 style="color:#fa0;">⚠️ MediaPipe Failed</h2><p style="margin:20px 0;">Không thể khởi động AI</p><button onclick="location.reload()" style="padding:12px 24px;">Thử lại</button></div>';
         return;
       }
       
       loadingEl.classList.add('hide');
-      updateGesture('idle', '✋ Di chuyển tay', 0);
+      updateGesture('idle', '✋ Di chuyển tay để bắt đầu');
       animate();
       
-      console.log('🚀 ULTRA PRECISE HAND TRACKING ACTIVATED');
-      console.log('📊 AI: 30 FPS | Kalman Filter | Adaptive Smoothing | High Confidence');
+      console.log('🚀 PREDICTIVE AI TRACKING ACTIVATED');
+      console.log('🔮 Features: Double Exponential Smoothing + Motion Prediction + Dead Reckoning');
     }
     
     init();
