@@ -24,6 +24,11 @@
       left: 0;
       width: 100vw;
       height: 100vh;
+      cursor: grab;
+    }
+    
+    #canvas:active {
+      cursor: grabbing;
     }
     
     #video {
@@ -35,6 +40,11 @@
       object-fit: cover;
       transform: scaleX(-1);
       z-index: -1;
+      display: none;
+    }
+    
+    #video.active {
+      display: block;
     }
     
     .ui {
@@ -132,7 +142,7 @@
     }
     
     .hide {
-      display: none;
+      display: none !important;
     }
     
     .gesture-icon {
@@ -177,6 +187,20 @@
       animation: float 2s ease-in-out infinite;
       font-size: 80px;
     }
+    
+    .mode-badge {
+      position: fixed;
+      top: 80px;
+      left: 20px;
+      background: rgba(0,0,0,0.7);
+      color: #0f0;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: monospace;
+      border: 1px solid rgba(0,255,0,0.3);
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
@@ -193,10 +217,13 @@
   <!-- Canvas -->
   <canvas id="canvas"></canvas>
   
+  <!-- Mode Badge -->
+  <div class="mode-badge hide" id="modeBadge">🖱️ Mouse Mode</div>
+  
   <!-- UI -->
   <div class="ui top-left" id="status">
     <span class="gesture-icon">✋</span>
-    <span id="gesture-text">Di chuyển tay để bắt đầu</span>
+    <span id="gesture-text">Đang khởi động...</span>
   </div>
   
   <div class="ui top-right">
@@ -209,10 +236,17 @@
   </div>
   
   <div class="instructions" id="instructions">
-    <h2>🎄 Hướng dẫn điều khiển bằng tay</h2>
-    <p>✋ <strong>Di chuyển tay trái/phải</strong> để xoay cây thông</p>
-    <p>🤏 <strong>Véo ngón cái + ngón trỏ</strong> để phóng to/thu nhỏ</p>
-    <p>✊ <strong>Nắm đấm</strong> để kích hoạt xoay vòng 360°</p>
+    <h2>🎄 Hướng dẫn điều khiển</h2>
+    <div id="handInstructions">
+      <p>✋ <strong>Di chuyển tay trái/phải</strong> để xoay cây thông</p>
+      <p>🤏 <strong>Véo ngón cái + ngón trỏ</strong> để phóng to/thu nhỏ</p>
+      <p>✊ <strong>Nắm đấm</strong> để kích hoạt xoay vòng 360°</p>
+    </div>
+    <div id="mouseInstructions" class="hide">
+      <p>🖱️ <strong>Kéo chuột</strong> để xoay cây thông</p>
+      <p>🔍 <strong>Lăn chuột</strong> để phóng to/thu nhỏ</p>
+      <p>👆 <strong>Double-click</strong> để xoay vòng 360°</p>
+    </div>
     <button onclick="hideInstructions()" style="margin-top: 24px; padding: 12px 32px; font-size: 15px;">
       Bắt đầu trải nghiệm 🎅
     </button>
@@ -222,8 +256,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   
   <!-- MediaPipe -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1620248168/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
   
   <script>
     // ============================================
@@ -236,17 +269,23 @@
     let targetScale = 1;
     let frameCount = 0;
     let lastTime = Date.now();
-    let hands, cameraUtil;
+    let hands;
     let lastHandSeen = Date.now();
     let isSpinning = false;
     let ornaments = [];
     let lights = [];
+    let controlMode = 'loading'; // 'loading', 'hand', 'mouse'
+    
+    // Mouse control
+    let isDragging = false;
+    let previousMouseX = 0;
     
     const canvas = document.getElementById('canvas');
     const video = document.getElementById('video');
     const gestureTextEl = document.getElementById('gesture-text');
     const fpsEl = document.getElementById('fps');
     const loadingEl = document.getElementById('loading');
+    const modeBadge = document.getElementById('modeBadge');
     
     // ============================================
     // INIT CAMERA
@@ -263,12 +302,12 @@
         
         video.srcObject = stream;
         await video.play();
+        video.classList.add('active');
         
         console.log('✅ Camera initialized');
         return true;
       } catch (err) {
         console.error('❌ Camera error:', err);
-        alert('Không thể truy cập camera. Vui lòng cho phép quyền camera trong trình duyệt.');
         return false;
       }
     }
@@ -278,9 +317,13 @@
     // ============================================
     async function initMediaPipe() {
       try {
+        if (typeof Hands === 'undefined') {
+          throw new Error('MediaPipe Hands not loaded');
+        }
+        
         hands = new Hands({
           locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`;
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
           }
         });
         
@@ -293,15 +336,17 @@
         
         hands.onResults(onHandResults);
         
-        cameraUtil = new Camera(video, {
-          onFrame: async () => {
+        // Manual frame processing loop
+        const processFrame = async () => {
+          if (video.readyState === 4) {
             await hands.send({ image: video });
-          },
-          width: 1280,
-          height: 720
-        });
+          }
+          if (controlMode === 'hand') {
+            requestAnimationFrame(processFrame);
+          }
+        };
         
-        await cameraUtil.start();
+        processFrame();
         
         console.log('✅ MediaPipe initialized');
         return true;
@@ -318,7 +363,6 @@
       if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
         updateGesture('idle');
         
-        // Decay rotation when no hand
         const timeSince = Date.now() - lastHandSeen;
         if (timeSince > 500) {
           targetRotation *= 0.95;
@@ -329,15 +373,11 @@
       lastHandSeen = Date.now();
       const landmarks = results.multiHandLandmarks[0];
       
-      // Get key points
       const wrist = landmarks[0];
       const thumbTip = landmarks[4];
       const indexTip = landmarks[8];
       const middleTip = landmarks[12];
-      const ringTip = landmarks[16];
-      const pinkyTip = landmarks[20];
       
-      // Helper function
       const dist = (p1, p2) => {
         const dx = p1.x - p2.x;
         const dy = p1.y - p2.y;
@@ -345,13 +385,12 @@
         return Math.sqrt(dx*dx + dy*dy + dz*dz);
       };
       
-      // Calculate distances
       const thumbDist = dist(thumbTip, wrist);
       const indexDist = dist(indexTip, wrist);
       const middleDist = dist(middleTip, wrist);
       const pinchDist = dist(thumbTip, indexTip);
       
-      // 1. FIST DETECTION (Magic Spin)
+      // FIST
       if (thumbDist < 0.15 && indexDist < 0.18 && middleDist < 0.18) {
         if (!isSpinning) {
           updateGesture('spin');
@@ -360,7 +399,7 @@
         return;
       }
       
-      // 2. PINCH DETECTION (Zoom)
+      // PINCH
       if (pinchDist < 0.12) {
         updateGesture('zoom');
         const normalizedDist = Math.max(0.02, Math.min(0.3, pinchDist));
@@ -368,9 +407,9 @@
         return;
       }
       
-      // 3. ROTATION CONTROL
+      // ROTATION
       const handX = wrist.x;
-      const centered = (handX - 0.5) * 2; // -1 to 1
+      const centered = (handX - 0.5) * 2;
       
       const DEADZONE = 0.25;
       
@@ -378,14 +417,63 @@
         updateGesture('idle');
         targetRotation *= 0.92;
       } else {
-        if (centered < 0) {
-          updateGesture('left');
-        } else {
-          updateGesture('right');
-        }
-        
+        updateGesture(centered < 0 ? 'left' : 'right');
         targetRotation += centered * 0.05;
       }
+    }
+    
+    // ============================================
+    // MOUSE CONTROLS
+    // ============================================
+    function initMouseControls() {
+      canvas.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        previousMouseX = e.clientX;
+      });
+      
+      canvas.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const deltaX = e.clientX - previousMouseX;
+        targetRotation += deltaX * 0.01;
+        previousMouseX = e.clientX;
+        updateGesture('mouse-drag');
+      });
+      
+      canvas.addEventListener('mouseup', () => {
+        isDragging = false;
+        updateGesture('idle');
+      });
+      
+      canvas.addEventListener('mouseleave', () => {
+        isDragging = false;
+      });
+      
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY * -0.001;
+        targetScale = Math.max(0.5, Math.min(2.5, targetScale + delta));
+      });
+      
+      canvas.addEventListener('dblclick', triggerMagicSpin);
+      
+      // Touch
+      canvas.addEventListener('touchstart', (e) => {
+        isDragging = true;
+        previousMouseX = e.touches[0].clientX;
+      });
+      
+      canvas.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const deltaX = e.touches[0].clientX - previousMouseX;
+        targetRotation += deltaX * 0.01;
+        previousMouseX = e.touches[0].clientX;
+      });
+      
+      canvas.addEventListener('touchend', () => {
+        isDragging = false;
+      });
+      
+      console.log('✅ Mouse controls enabled');
     }
     
     // ============================================
@@ -397,7 +485,8 @@
         left: { icon: '↶', text: 'Đang xoay trái' },
         right: { icon: '↷', text: 'Đang xoay phải' },
         zoom: { icon: '🔍', text: 'Đang zoom' },
-        spin: { icon: '✨', text: 'Xoay vòng ma thuật!' }
+        spin: { icon: '✨', text: 'Xoay vòng ma thuật!' },
+        'mouse-drag': { icon: '🖱️', text: 'Đang kéo xoay' }
       };
       
       const gesture = gestures[type] || gestures.idle;
@@ -409,12 +498,13 @@
     // MAGIC SPIN
     // ============================================
     function triggerMagicSpin() {
+      if (isSpinning) return;
+      
       isSpinning = true;
       const start = targetRotation;
       const duration = 2000;
       const startTime = Date.now();
       
-      // Burst effect
       lights.forEach((light, i) => {
         setTimeout(() => {
           light.intensity = 3;
@@ -440,17 +530,15 @@
     // SCENE SETUP
     // ============================================
     function initScene() {
-      // Scene
       scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0a1f2e);
       scene.fog = new THREE.Fog(0x0a1f2e, 5, 15);
       
-      // Camera
       const aspect = window.innerWidth / window.innerHeight;
       camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
       camera.position.set(0, 3, 7);
       camera.lookAt(0, 2.5, 0);
       
-      // Renderer
       renderer = new THREE.WebGLRenderer({ 
         canvas: canvas,
         alpha: true,
@@ -461,7 +549,6 @@
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       
-      // Lights
       const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
       scene.add(ambientLight);
       
@@ -474,7 +561,6 @@
       topLight.position.set(0, 15, 0);
       scene.add(topLight);
       
-      // Rim light
       const rimLight = new THREE.DirectionalLight(0x88ccff, 0.3);
       rimLight.position.set(-5, 5, -5);
       scene.add(rimLight);
@@ -486,12 +572,12 @@
     }
     
     // ============================================
-    // CREATE ENHANCED TREE
+    // CREATE TREE
     // ============================================
     function createTree() {
       tree = new THREE.Group();
       
-      // Trunk with texture
+      // Trunk
       const trunkGeo = new THREE.CylinderGeometry(0.22, 0.28, 1.2, 16);
       const trunkMat = new THREE.MeshStandardMaterial({ 
         color: 0x4a2511,
@@ -503,7 +589,7 @@
       trunk.castShadow = true;
       tree.add(trunk);
       
-      // Foliage - 4 tiers with gradient
+      // Foliage
       const foliageColors = [0x0d5c2d, 0x0f6e35, 0x11803d, 0x139245];
       const tierSizes = [
         { radius: 1.4, height: 1.7, y: 1.7 },
@@ -518,8 +604,7 @@
           new THREE.MeshStandardMaterial({ 
             color: foliageColors[i],
             roughness: 0.8,
-            metalness: 0.2,
-            flatShading: false
+            metalness: 0.2
           })
         );
         foliage.position.y = size.y;
@@ -527,7 +612,7 @@
         tree.add(foliage);
       });
       
-      // Star - Enhanced
+      // Star
       const starGeo = new THREE.IcosahedronGeometry(0.35, 1);
       const starMat = new THREE.MeshStandardMaterial({ 
         color: 0xffd700,
@@ -541,21 +626,20 @@
       star.name = 'star';
       tree.add(star);
       
-      // Star glow
       const starGlow = new THREE.PointLight(0xffd700, 2, 5);
       starGlow.position.copy(star.position);
       tree.add(starGlow);
       
-      // Ornaments - More varied
+      // Ornaments
       const ornamentData = [
-        { color: 0xff0000, metalness: 0.9 }, // Red metallic
-        { color: 0x0000ff, metalness: 0.7 }, // Blue
-        { color: 0xffd700, metalness: 1.0 }, // Gold
-        { color: 0xff1493, metalness: 0.6 }, // Pink
-        { color: 0x00ff00, metalness: 0.5 }, // Green
-        { color: 0xff4500, metalness: 0.8 }, // Orange
-        { color: 0x9370db, metalness: 0.7 }, // Purple
-        { color: 0xff69b4, metalness: 0.6 }  // Hot pink
+        { color: 0xff0000, metalness: 0.9 },
+        { color: 0x0000ff, metalness: 0.7 },
+        { color: 0xffd700, metalness: 1.0 },
+        { color: 0xff1493, metalness: 0.6 },
+        { color: 0x00ff00, metalness: 0.5 },
+        { color: 0xff4500, metalness: 0.8 },
+        { color: 0x9370db, metalness: 0.7 },
+        { color: 0xff69b4, metalness: 0.6 }
       ];
       
       ornaments = [];
@@ -575,7 +659,7 @@
         );
         
         const tier = Math.floor(i / 6);
-        const angle = (i * 137.5) * Math.PI / 180; // Golden angle
+        const angle = (i * 137.5) * Math.PI / 180;
         const radius = 0.4 + Math.random() * 0.5 - tier * 0.12;
         const height = 1.5 + tier * 0.8 + Math.random() * 0.4;
         
@@ -589,14 +673,12 @@
         tree.add(ornament);
         ornaments.push(ornament);
         
-        // Small light per ornament
         const ornamentLight = new THREE.PointLight(data.color, 0.5, 1);
         ornamentLight.position.copy(ornament.position);
         tree.add(ornamentLight);
         lights.push(ornamentLight);
       }
       
-      // Main internal light
       const mainLight = new THREE.PointLight(0xffaa44, 3, 10);
       mainLight.position.set(0, 2.5, 0);
       tree.add(mainLight);
@@ -639,12 +721,11 @@
     }
     
     // ============================================
-    // ANIMATION LOOP
+    // ANIMATION
     // ============================================
     function animate() {
       requestAnimationFrame(animate);
       
-      // FPS
       frameCount++;
       const now = Date.now();
       if (now - lastTime > 1000) {
@@ -653,34 +734,28 @@
         lastTime = now;
       }
       
-      // Smooth rotation
       rotation += (targetRotation - rotation) * 0.08;
       tree.rotation.y = rotation;
       
-      // Smooth scale
       scale += (targetScale - scale) * 0.08;
       tree.scale.set(scale, scale, scale);
       
-      // Rotate star
       const star = tree.getObjectByName('star');
       if (star) {
         star.rotation.y += 0.03;
         star.rotation.z = Math.sin(now * 0.001) * 0.2;
       }
       
-      // Pulsating ornament lights
       lights.forEach((light, i) => {
         const pulse = Math.sin(now * 0.002 + i * 0.5) * 0.5 + 0.5;
         light.intensity = 0.5 + pulse * 1;
       });
       
-      // Sparkle ornaments
       ornaments.forEach((ornament, i) => {
         const sparkle = Math.sin(now * 0.003 + i) * 0.5 + 0.5;
         ornament.material.emissiveIntensity = 0.3 + sparkle * 0.5;
       });
       
-      // Animate snow
       const snow = scene.getObjectByName('snow');
       if (snow) {
         const positions = snow.geometry.attributes.position.array;
@@ -701,7 +776,7 @@
     }
     
     // ============================================
-    // UI FUNCTIONS
+    // UI
     // ============================================
     function hideInstructions() {
       document.getElementById('instructions').classList.add('hide');
@@ -709,9 +784,6 @@
     
     setTimeout(hideInstructions, 10000);
     
-    // ============================================
-    // RESIZE
-    // ============================================
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -719,26 +791,49 @@
     });
     
     // ============================================
-    // INITIALIZATION
+    // INIT
     // ============================================
     async function init() {
-      const cameraOK = await initCamera();
-      if (!cameraOK) {
-        loadingEl.innerHTML = '<div style="color:white; text-align:center;"><h2>❌ Lỗi Camera</h2><p>Vui lòng cho phép truy cập camera</p><button onclick="location.reload()" style="margin-top:20px;">Thử lại</button></div>';
-        return;
-      }
-      
       initScene();
       
-      const mpOK = await initMediaPipe();
-      if (!mpOK) {
-        console.warn('⚠️ MediaPipe failed, but scene is running');
+      const cameraOK = await initCamera();
+      
+      if (cameraOK) {
+        const mpOK = await initMediaPipe();
+        
+        if (mpOK) {
+          controlMode = 'hand';
+          modeBadge.textContent = '✋ Hand Tracking';
+          modeBadge.style.color = '#0f0';
+          updateGesture('idle');
+          console.log('✅ Hand tracking mode');
+        } else {
+          controlMode = 'mouse';
+          initMouseControls();
+          modeBadge.textContent = '🖱️ Mouse Mode';
+          modeBadge.style.color = '#ff0';
+          updateGesture('mouse-drag');
+          document.getElementById('handInstructions').classList.add('hide');
+          document.getElementById('mouseInstructions').classList.remove('hide');
+          video.classList.remove('active');
+          console.log('⚠️ Fallback to mouse mode');
+        }
+      } else {
+        controlMode = 'mouse';
+        initMouseControls();
+        modeBadge.textContent = '🖱️ Mouse Mode';
+        modeBadge.style.color = '#ff0';
+        updateGesture('idle');
+        document.getElementById('handInstructions').classList.add('hide');
+        document.getElementById('mouseInstructions').classList.remove('hide');
+        console.log('⚠️ No camera, using mouse mode');
       }
       
+      modeBadge.classList.remove('hide');
       loadingEl.classList.add('hide');
       animate();
       
-      console.log('🚀 App started');
+      console.log('🚀 App started in', controlMode, 'mode');
     }
     
     init();
