@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎄 AR Cây Thông Noel - Predictive Hand Tracking</title>
+  <title>🎄 AR Cây Thông Noel - 360° Orbital Control</title>
   
   <style>
     * {
@@ -60,7 +60,7 @@
       left: 20px;
       font-weight: 600;
       font-size: 15px;
-      max-width: 320px;
+      max-width: 340px;
     }
     
     .top-right {
@@ -109,7 +109,7 @@
       border-radius: 25px;
       color: white;
       text-align: center;
-      max-width: 520px;
+      max-width: 560px;
       z-index: 100;
       border: 2px solid rgba(255,215,0,0.6);
       box-shadow: 0 20px 60px rgba(0,0,0,0.7);
@@ -173,24 +173,36 @@
       font-size: 80px;
     }
     
-    .prediction-indicator {
+    .orbit-indicator {
       position: fixed;
       top: 90px;
       left: 20px;
-      background: rgba(0, 255, 0, 0.2);
-      border: 1px solid rgba(0, 255, 0, 0.5);
-      color: #0f0;
-      padding: 8px 16px;
+      background: rgba(0, 100, 255, 0.2);
+      border: 1px solid rgba(0, 150, 255, 0.5);
+      color: #0af;
+      padding: 10px 18px;
       border-radius: 20px;
       font-size: 11px;
       font-family: monospace;
       z-index: 10;
     }
     
-    .latency-display {
-      font-size: 10px;
-      opacity: 0.8;
-      margin-top: 4px;
+    .rotation-trail {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 100px;
+      height: 100px;
+      margin: -50px 0 0 -50px;
+      border: 2px dashed rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .rotation-trail.active {
+      opacity: 1;
     }
   </style>
 </head>
@@ -198,7 +210,7 @@
   <!-- Loading Screen -->
   <div class="loading" id="loading">
     <div class="float">🎄</div>
-    <div class="loading-text">Khởi động Predictive AI...</div>
+    <div class="loading-text">Khởi động 360° Orbital Control...</div>
     <div class="loading-text" style="font-size: 14px; margin-top: 10px; opacity: 0.7;">Vui lòng cho phép camera</div>
   </div>
 
@@ -208,10 +220,13 @@
   <!-- Canvas -->
   <canvas id="canvas"></canvas>
   
-  <!-- Prediction Indicator -->
-  <div class="prediction-indicator" id="predictionIndicator" style="display:none;">
-    <div>🔮 PREDICTIVE MODE</div>
-    <div class="latency-display" id="latencyDisplay">Latency: 0ms</div>
+  <!-- Rotation Trail Indicator -->
+  <div class="rotation-trail" id="rotationTrail"></div>
+  
+  <!-- Orbit Indicator -->
+  <div class="orbit-indicator" id="orbitIndicator">
+    <div>🌐 ORBITAL CAMERA</div>
+    <div style="font-size: 10px; margin-top: 4px; opacity: 0.9;" id="orbitDetails">Azimuth: 0° | Elevation: 45°</div>
   </div>
   
   <!-- UI -->
@@ -223,6 +238,7 @@
   <div class="ui top-right">
     <div id="fps">60 FPS</div>
     <div id="aiFps" style="font-size: 11px; opacity: 0.8;">AI: 0</div>
+    <button onclick="resetCamera()">🎯 Reset</button>
     <button onclick="location.reload()">🔄</button>
   </div>
   
@@ -231,12 +247,14 @@
   </div>
   
   <div class="instructions" id="instructions">
-    <h2>🎄 Điều khiển bằng tay - AI dự đoán chuyển động</h2>
-    <p>← → <strong>Tay trái/phải</strong> để xoay cây</p>
-    <p>↑ ↓ <strong>Tay lên/xuống</strong> để thay đổi góc nhìn</p>
-    <p>🤏 <strong>Véo ngón</strong> để zoom in/out</p>
+    <h2>🎄 Điều khiển 360° - Quay quanh cây thông</h2>
+    <p>← → <strong>Tay trái/phải</strong> - Quay camera ngang (Azimuth)</p>
+    <p>↑ ↓ <strong>Tay lên/xuống</strong> - Thay đổi góc nhìn (Elevation)</p>
+    <p>🔄 <strong>Xoay tay tròn</strong> - Camera quay theo (Orbital)</p>
+    <p>🤏 <strong>Véo ngón</strong> - Zoom in/out</p>
+    <p>👌 <strong>OK sign</strong> (ngón cái + trỏ tròn) - Reset camera</p>
     <p style="font-size: 13px; margin-top: 20px; opacity: 0.9; color: #ffd700;">
-      💡 <strong>AI Prediction:</strong> Hệ thống tự động dự đoán chuyển động tay để giảm độ trễ xuống 0ms
+      💡 Bạn có thể xoay 360° quanh cây để xem mọi góc độ!
     </p>
     <button onclick="hideInstructions()" style="margin-top: 24px; padding: 12px 32px; font-size: 15px;">
       Bắt đầu trải nghiệm 🎅
@@ -251,109 +269,108 @@
   
   <script>
     // ============================================
-    // DOUBLE EXPONENTIAL SMOOTHING (Holt's Method)
+    // DOUBLE EXPONENTIAL SMOOTHING
     // ============================================
     class DoubleExponentialSmoothing {
-      constructor(alpha = 0.3, beta = 0.2) {
-        this.alpha = alpha; // Data smoothing
-        this.beta = beta;   // Trend smoothing
+      constructor(alpha = 0.4, beta = 0.3) {
+        this.alpha = alpha;
+        this.beta = beta;
         this.level = null;
         this.trend = null;
       }
       
-      predict(value, steps = 1) {
+      predict(value, steps = 2) {
         if (this.level === null) {
           this.level = value;
           this.trend = 0;
           return value;
         }
         
-        // Update level and trend
         const lastLevel = this.level;
         this.level = this.alpha * value + (1 - this.alpha) * (this.level + this.trend);
         this.trend = this.beta * (this.level - lastLevel) + (1 - this.beta) * this.trend;
         
-        // Forecast future value
         return this.level + steps * this.trend;
-      }
-      
-      getCurrentTrend() {
-        return this.trend || 0;
       }
     }
     
     // ============================================
-    // MOTION VECTOR CLASS
+    // CIRCULAR MOTION DETECTOR
     // ============================================
-    class MotionVector {
+    class CircularMotionDetector {
       constructor() {
-        this.history = [];
-        this.maxHistory = 5;
+        this.positions = [];
+        this.maxHistory = 15;
+        this.rotationDetected = false;
       }
       
-      addPoint(x, y, timestamp) {
-        this.history.push({ x, y, t: timestamp });
-        if (this.history.length > this.maxHistory) {
-          this.history.shift();
+      addPosition(x, y) {
+        this.positions.push({ x, y, t: Date.now() });
+        if (this.positions.length > this.maxHistory) {
+          this.positions.shift();
         }
       }
       
-      getVelocity() {
-        if (this.history.length < 2) return { vx: 0, vy: 0 };
+      detectCircularMotion() {
+        if (this.positions.length < 8) return { detected: false, direction: 0, speed: 0 };
         
-        const recent = this.history[this.history.length - 1];
-        const previous = this.history[this.history.length - 2];
+        // Calculate center of motion
+        let centerX = 0, centerY = 0;
+        for (let p of this.positions) {
+          centerX += p.x;
+          centerY += p.y;
+        }
+        centerX /= this.positions.length;
+        centerY /= this.positions.length;
         
-        const dt = recent.t - previous.t;
-        if (dt === 0) return { vx: 0, vy: 0 };
-        
-        return {
-          vx: (recent.x - previous.x) / dt,
-          vy: (recent.y - previous.y) / dt
-        };
-      }
-      
-      getAcceleration() {
-        if (this.history.length < 3) return { ax: 0, ay: 0 };
-        
-        const velocities = [];
-        for (let i = 1; i < this.history.length; i++) {
-          const dt = this.history[i].t - this.history[i-1].t;
-          if (dt > 0) {
-            velocities.push({
-              vx: (this.history[i].x - this.history[i-1].x) / dt,
-              vy: (this.history[i].y - this.history[i-1].y) / dt,
-              t: this.history[i].t
-            });
-          }
+        // Calculate angles relative to center
+        const angles = [];
+        for (let p of this.positions) {
+          const dx = p.x - centerX;
+          const dy = p.y - centerY;
+          const angle = Math.atan2(dy, dx);
+          angles.push(angle);
         }
         
-        if (velocities.length < 2) return { ax: 0, ay: 0 };
+        // Check if angles are progressing (circular motion)
+        let totalAngleChange = 0;
+        for (let i = 1; i < angles.length; i++) {
+          let diff = angles[i] - angles[i-1];
+          
+          // Normalize to -PI to PI
+          while (diff > Math.PI) diff -= 2 * Math.PI;
+          while (diff < -Math.PI) diff += 2 * Math.PI;
+          
+          totalAngleChange += diff;
+        }
         
-        const v1 = velocities[velocities.length - 1];
-        const v0 = velocities[velocities.length - 2];
-        const dt = v1.t - v0.t;
+        const avgAngleChange = totalAngleChange / (angles.length - 1);
+        const isCircular = Math.abs(totalAngleChange) > Math.PI / 2;
         
-        if (dt === 0) return { ax: 0, ay: 0 };
+        // Calculate radius variance (circular should have consistent radius)
+        const radii = this.positions.map(p => {
+          const dx = p.x - centerX;
+          const dy = p.y - centerY;
+          return Math.sqrt(dx*dx + dy*dy);
+        });
         
-        return {
-          ax: (v1.vx - v0.vx) / dt,
-          ay: (v1.vy - v0.vy) / dt
-        };
+        const avgRadius = radii.reduce((a,b) => a+b) / radii.length;
+        const radiusVariance = radii.reduce((sum, r) => sum + Math.pow(r - avgRadius, 2), 0) / radii.length;
+        
+        const isConsistentRadius = radiusVariance < 0.01;
+        
+        const detected = isCircular && isConsistentRadius;
+        const direction = totalAngleChange > 0 ? 1 : -1;
+        const speed = Math.abs(avgAngleChange) * 10;
+        
+        this.rotationDetected = detected;
+        
+        return { detected, direction, speed };
       }
       
-      predictPosition(deltaTime) {
-        if (this.history.length === 0) return { x: 0.5, y: 0.5 };
-        
-        const current = this.history[this.history.length - 1];
-        const velocity = this.getVelocity();
-        const acceleration = this.getAcceleration();
-        
-        // Physics: position = current + velocity*t + 0.5*acceleration*t^2
-        const predictedX = current.x + velocity.vx * deltaTime + 0.5 * acceleration.ax * deltaTime * deltaTime;
-        const predictedY = current.y + velocity.vy * deltaTime + 0.5 * acceleration.ay * deltaTime * deltaTime;
-        
-        return { x: predictedX, y: predictedY };
+      reset() {
+        this.positions = [];
+        this.rotationDetected = false;
       }
     }
     
@@ -362,17 +379,16 @@
     // ============================================
     let scene, camera, renderer, tree;
     
-    // Tree rotation
-    let targetRotationY = 0;
-    let currentRotationY = 0;
+    // ORBITAL CAMERA PARAMETERS
+    let targetAzimuth = 0;      // Horizontal angle (0-360°)
+    let targetElevation = 45;   // Vertical angle (5-85°)
+    let targetDistance = 7;     // Distance from target
     
-    // Camera position
-    let targetCameraY = 3;
-    let currentCameraY = 3;
+    let currentAzimuth = 0;
+    let currentElevation = 45;
+    let currentDistance = 7;
     
-    // Zoom
-    let targetCameraZ = 7;
-    let currentCameraZ = 7;
+    const TARGET_POSITION = new THREE.Vector3(0, 2.5, 0); // Look at tree center
     
     let frameCount = 0;
     let aiFrameCount = 0;
@@ -383,20 +399,12 @@
     let lights = [];
     
     // PREDICTIVE TRACKING
-    const desX = new DoubleExponentialSmoothing(0.4, 0.3);
-    const desY = new DoubleExponentialSmoothing(0.4, 0.3);
-    const desPinch = new DoubleExponentialSmoothing(0.5, 0.4);
+    const desX = new DoubleExponentialSmoothing(0.5, 0.4);
+    const desY = new DoubleExponentialSmoothing(0.5, 0.4);
+    const desPinch = new DoubleExponentialSmoothing(0.6, 0.5);
     
-    const motionVector = new MotionVector();
-    
-    // Latency tracking
-    let lastAIProcessTime = 0;
-    let aiLatency = 0;
-    
-    // Prediction state
-    let isPredicting = false;
-    let lastRealHandPosition = { x: 0.5, y: 0.5 };
-    let predictionConfidence = 0;
+    // CIRCULAR MOTION DETECTION
+    const circularDetector = new CircularMotionDetector();
     
     const canvas = document.getElementById('canvas');
     const video = document.getElementById('video');
@@ -404,9 +412,42 @@
     const detailsEl = document.getElementById('details');
     const fpsEl = document.getElementById('fps');
     const aiFpsEl = document.getElementById('aiFps');
-    const latencyDisplayEl = document.getElementById('latencyDisplay');
-    const predictionIndicatorEl = document.getElementById('predictionIndicator');
+    const orbitDetailsEl = document.getElementById('orbitDetails');
+    const rotationTrailEl = document.getElementById('rotationTrail');
     const loadingEl = document.getElementById('loading');
+    
+    // ============================================
+    // CAMERA POSITION CALCULATION
+    // ============================================
+    function updateCameraPosition() {
+      // Convert spherical to Cartesian coordinates
+      const azimuthRad = currentAzimuth * Math.PI / 180;
+      const elevationRad = currentElevation * Math.PI / 180;
+      
+      const x = TARGET_POSITION.x + currentDistance * Math.cos(elevationRad) * Math.sin(azimuthRad);
+      const y = TARGET_POSITION.y + currentDistance * Math.sin(elevationRad);
+      const z = TARGET_POSITION.z + currentDistance * Math.cos(elevationRad) * Math.cos(azimuthRad);
+      
+      camera.position.set(x, y, z);
+      camera.lookAt(TARGET_POSITION);
+      
+      // Update UI
+      orbitDetailsEl.textContent = `Azimuth: ${Math.round(currentAzimuth)}° | Elevation: ${Math.round(currentElevation)}° | Distance: ${currentDistance.toFixed(1)}m`;
+    }
+    
+    // ============================================
+    // RESET CAMERA
+    // ============================================
+    function resetCamera() {
+      targetAzimuth = 0;
+      targetElevation = 45;
+      targetDistance = 7;
+      
+      console.log('🎯 Camera reset to default position');
+    }
+    
+    // Make it globally accessible
+    window.resetCamera = resetCamera;
     
     // ============================================
     // INIT CAMERA
@@ -426,17 +467,17 @@
         await video.play();
         video.classList.add('active');
         
-        console.log('✅ Camera initialized (1920x1080@60fps)');
+        console.log('✅ Camera initialized');
         return true;
       } catch (err) {
         console.error('❌ Camera error:', err);
-        alert('Không thể truy cập camera. Vui lòng cho phép quyền camera.');
+        alert('Không thể truy cập camera.');
         return false;
       }
     }
     
     // ============================================
-    // INIT MEDIAPIPE - MAXIMUM PERFORMANCE
+    // INIT MEDIAPIPE
     // ============================================
     async function initMediaPipe() {
       try {
@@ -469,12 +510,8 @@
           const now = performance.now();
           
           if (video.readyState === 4 && now - lastProcessTime >= AI_INTERVAL) {
-            lastAIProcessTime = now;
             await hands.send({ image: video });
             lastProcessTime = now;
-            
-            // Calculate AI latency
-            aiLatency = performance.now() - lastAIProcessTime;
             
             // AI FPS counter
             aiFrameCount++;
@@ -490,7 +527,7 @@
         
         processFrame();
         
-        console.log('✅ MediaPipe initialized (30 FPS + Prediction)');
+        console.log('✅ MediaPipe initialized');
         return true;
       } catch (err) {
         console.error('❌ MediaPipe error:', err);
@@ -499,32 +536,15 @@
     }
     
     // ============================================
-    // HAND RESULTS PROCESSING - WITH PREDICTION
+    // HAND RESULTS PROCESSING - ORBITAL CONTROL
     // ============================================
     function onHandResults(results) {
-      const now = performance.now();
-      
       if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-        // DEAD RECKONING: Continue motion when hand lost temporarily
-        if (now - lastAIProcessTime < 200) { // Within 200ms
-          isPredicting = true;
-          const predicted = motionVector.predictPosition(0.05); // Predict 50ms ahead
-          
-          if (predicted.x > 0 && predicted.x < 1 && predicted.y > 0 && predicted.y < 1) {
-            processHandPosition(predicted.x, predicted.y, 0.1); // Use predicted position
-            predictionConfidence = Math.max(0, predictionConfidence - 0.1);
-          }
-        } else {
-          isPredicting = false;
-          predictionConfidence = 0;
-        }
-        
         updateGesture('idle', '✋ Không phát hiện tay');
+        circularDetector.reset();
+        rotationTrailEl.classList.remove('active');
         return;
       }
-      
-      isPredicting = false;
-      predictionConfidence = 1;
       
       const landmarks = results.multiHandLandmarks[0];
       
@@ -532,11 +552,11 @@
       const wrist = landmarks[0];
       const thumbTip = landmarks[4];
       const indexTip = landmarks[8];
+      const middleTip = landmarks[12];
+      const ringTip = landmarks[16];
+      const pinkyTip = landmarks[20];
       
-      // Add to motion history
-      motionVector.addPoint(wrist.x, wrist.y, now);
-      
-      // Calculate distance
+      // Calculate distances
       const dist = (p1, p2) => {
         const dx = p1.x - p2.x;
         const dy = p1.y - p2.y;
@@ -544,67 +564,94 @@
       };
       
       const pinchDist = dist(thumbTip, indexTip);
+      const thumbIndexDist = dist(thumbTip, indexTip);
       
-      // PREDICTIVE SMOOTHING - Forecast next position
-      const PREDICTION_STEPS = 2; // Predict 2 steps ahead
+      // PREDICTIVE SMOOTHING
+      const PREDICTION_STEPS = 2;
       
       const predictedX = desX.predict(wrist.x, PREDICTION_STEPS);
       const predictedY = desY.predict(wrist.y, PREDICTION_STEPS);
       const predictedPinch = desPinch.predict(pinchDist, PREDICTION_STEPS);
       
-      lastRealHandPosition = { x: wrist.x, y: wrist.y };
+      // Add to circular motion detector
+      circularDetector.addPosition(predictedX, predictedY);
       
-      // Process with PREDICTED values for instant response
-      processHandPosition(predictedX, predictedY, predictedPinch);
+      // ============================================
+      // GESTURE DETECTION PRIORITY
+      // ============================================
       
-      // Update latency display
-      latencyDisplayEl.textContent = `Latency: ${Math.round(aiLatency)}ms | Predict: +${PREDICTION_STEPS}f`;
-      predictionIndicatorEl.style.display = 'block';
-    }
-    
-    // ============================================
-    // PROCESS HAND POSITION (Separated for reuse)
-    // ============================================
-    function processHandPosition(handX, handY, pinchDist) {
-      // PINCH (Zoom)
-      if (pinchDist < 0.12) {
-        const normalizedPinch = Math.max(0.02, Math.min(0.12, pinchDist));
-        targetCameraZ = 4 + (normalizedPinch / 0.12) * 6;
-        
-        updateGesture('zoom', `🔍 Zoom ${targetCameraZ.toFixed(1)}m`);
+      // 1. OK SIGN (Reset Camera)
+      const okSignDist = dist(thumbTip, indexTip);
+      const isOkSign = okSignDist < 0.05 && 
+                       dist(middleTip, wrist) > 0.15 && 
+                       dist(ringTip, wrist) > 0.15 && 
+                       dist(pinkyTip, wrist) > 0.15;
+      
+      if (isOkSign) {
+        resetCamera();
+        updateGesture('reset', '👌 Reset camera về vị trí ban đầu');
         return;
       }
       
-      // HAND POSITION
-      const centeredX = (handX - 0.5) * 2;
-      const centeredY = handY - 0.5;
+      // 2. PINCH (Zoom)
+      if (predictedPinch < 0.12) {
+        const normalizedPinch = Math.max(0.02, Math.min(0.12, predictedPinch));
+        targetDistance = 4 + (normalizedPinch / 0.12) * 8;
+        
+        updateGesture('zoom', `🔍 Zoom: ${targetDistance.toFixed(1)}m`);
+        return;
+      }
       
-      const DEADZONE_X = 0.1;
-      const DEADZONE_Y = 0.1;
+      // 3. CIRCULAR MOTION DETECTION
+      const circularMotion = circularDetector.detectCircularMotion();
       
-      // Get current trend for dynamic speed adjustment
-      const trendX = desX.getCurrentTrend();
-      const trendY = desY.getCurrentTrend();
+      if (circularMotion.detected && circularMotion.speed > 0.5) {
+        rotationTrailEl.classList.add('active');
+        
+        // Rotate camera azimuth based on circular direction
+        targetAzimuth += circularMotion.direction * circularMotion.speed * 5;
+        
+        // Normalize to 0-360
+        while (targetAzimuth >= 360) targetAzimuth -= 360;
+        while (targetAzimuth < 0) targetAzimuth += 360;
+        
+        updateGesture('orbital', `🔄 Quay tròn: ${circularMotion.direction > 0 ? 'Clockwise ↻' : 'Counter ↺'}`);
+        return;
+      } else {
+        rotationTrailEl.classList.remove('active');
+      }
       
-      const BASE_ROTATION_SPEED = 0.1;
-      const TREND_MULTIPLIER = 2.0; // Amplify trend for responsiveness
+      // 4. LINEAR HAND POSITION (Azimuth + Elevation)
+      const centeredX = (predictedX - 0.5) * 2; // -1 to 1
+      const centeredY = predictedY - 0.5;       // -0.5 to 0.5
+      
+      const DEADZONE_X = 0.12;
+      const DEADZONE_Y = 0.12;
+      
+      const AZIMUTH_SPEED = 3;    // degrees per frame
+      const ELEVATION_SPEED = 2;  // degrees per frame
       
       let gestureText = '';
       
-      // ROTATION (X-axis) with trend-based speed
+      // AZIMUTH (Horizontal rotation)
       if (Math.abs(centeredX) > DEADZONE_X) {
-        const speedBoost = 1 + Math.abs(trendX) * TREND_MULTIPLIER;
-        const rotationSpeed = BASE_ROTATION_SPEED * Math.abs(centeredX) * speedBoost;
+        const speed = AZIMUTH_SPEED * Math.abs(centeredX);
+        targetAzimuth += centeredX * speed;
         
-        targetRotationY += centeredX * rotationSpeed;
+        // Normalize
+        while (targetAzimuth >= 360) targetAzimuth -= 360;
+        while (targetAzimuth < 0) targetAzimuth += 360;
         
-        gestureText = centeredX < 0 ? '↶ Xoay trái' : '↷ Xoay phải';
+        gestureText = centeredX < 0 ? '← Quay trái' : '→ Quay phải';
       }
       
-      // CAMERA Y (Vertical)
+      // ELEVATION (Vertical angle)
       if (Math.abs(centeredY) > DEADZONE_Y) {
-        targetCameraY = 3 - (centeredY * 4);
-        targetCameraY = Math.max(1, Math.min(6, targetCameraY));
+        const speed = ELEVATION_SPEED * Math.abs(centeredY);
+        targetElevation -= centeredY * speed; // Inverted: hand down = look up
+        
+        // Clamp to 5-85 degrees
+        targetElevation = Math.max(5, Math.min(85, targetElevation));
         
         if (gestureText) {
           gestureText += ' + ' + (centeredY < 0 ? '↑ Lên' : '↓ Xuống');
@@ -625,14 +672,7 @@
     // ============================================
     function updateGesture(type, text) {
       gestureTextEl.textContent = text;
-      
-      const velocity = motionVector.getVelocity();
-      const speed = Math.sqrt(velocity.vx * velocity.vx + velocity.vy * velocity.vy);
-      
-      const predictionStatus = isPredicting ? '🔮 PREDICTING' : '✅ TRACKING';
-      const confidencePercent = Math.round(predictionConfidence * 100);
-      
-      detailsEl.textContent = `${predictionStatus} | Conf: ${confidencePercent}% | Speed: ${(speed * 1000).toFixed(0)}px/s | Cam: Y${currentCameraY.toFixed(1)} Z${currentCameraZ.toFixed(1)}`;
+      detailsEl.textContent = `Mode: ${type.toUpperCase()} | Azimuth: ${Math.round(targetAzimuth)}° | Elevation: ${Math.round(targetElevation)}°`;
     }
     
     // ============================================
@@ -641,12 +681,13 @@
     function initScene() {
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x0a1f2e);
-      scene.fog = new THREE.Fog(0x0a1f2e, 5, 15);
+      scene.fog = new THREE.Fog(0x0a1f2e, 5, 20);
       
       const aspect = window.innerWidth / window.innerHeight;
       camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
-      camera.position.set(0, currentCameraY, currentCameraZ);
-      camera.lookAt(0, 2.5, 0);
+      
+      // Initial camera position
+      updateCameraPosition();
       
       renderer = new THREE.WebGLRenderer({ 
         canvas: canvas,
@@ -671,13 +712,18 @@
       topLight.position.set(0, 15, 0);
       scene.add(topLight);
       
-      const rimLight = new THREE.DirectionalLight(0x88ccff, 0.3);
-      rimLight.position.set(-5, 5, -5);
-      scene.add(rimLight);
+      const rimLight1 = new THREE.DirectionalLight(0x88ccff, 0.3);
+      rimLight1.position.set(-5, 5, -5);
+      scene.add(rimLight1);
+      
+      const rimLight2 = new THREE.DirectionalLight(0xff8888, 0.2);
+      rimLight2.position.set(5, 3, -5);
+      scene.add(rimLight2);
       
       createTree();
       createSnow();
       createGround();
+      createGrid(); // Helper grid
       
       console.log('✅ Scene initialized');
     }
@@ -797,21 +843,21 @@
       
       scene.add(tree);
       
-      console.log('🎄 Enhanced tree created');
+      console.log('🎄 Tree created');
     }
     
     // ============================================
     // CREATE SNOW
     // ============================================
     function createSnow() {
-      const particleCount = 150;
+      const particleCount = 200;
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(particleCount * 3);
       
       for (let i = 0; i < particleCount; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * 20;
+        positions[i * 3] = (Math.random() - 0.5) * 25;
         positions[i * 3 + 1] = Math.random() * 15;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 25;
       }
       
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -836,7 +882,7 @@
     // ============================================
     function createGround() {
       const ground = new THREE.Mesh(
-        new THREE.CircleGeometry(12, 32),
+        new THREE.CircleGeometry(15, 64),
         new THREE.MeshStandardMaterial({ 
           color: 0x1a3a4a,
           roughness: 0.8
@@ -848,7 +894,21 @@
     }
     
     // ============================================
-    // ANIMATION - ULTRA RESPONSIVE
+    // CREATE GRID (Helper)
+    // ============================================
+    function createGrid() {
+      const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+      gridHelper.position.y = 0.01;
+      scene.add(gridHelper);
+      
+      // Axis helper at tree position
+      const axesHelper = new THREE.AxesHelper(3);
+      axesHelper.position.copy(TARGET_POSITION);
+      scene.add(axesHelper);
+    }
+    
+    // ============================================
+    // ANIMATION - ORBITAL CAMERA UPDATE
     // ============================================
     function animate() {
       requestAnimationFrame(animate);
@@ -862,21 +922,19 @@
         lastTime = now;
       }
       
-      // ULTRA FAST INTERPOLATION
-      const ROTATION_SPEED = 0.3; // Very responsive
-      const CAMERA_SPEED = 0.25;  // Fast camera movement
+      // SMOOTH ORBITAL INTERPOLATION
+      const ORBIT_SPEED = 0.2;
       
-      // Smooth tree rotation
-      currentRotationY += (targetRotationY - currentRotationY) * ROTATION_SPEED;
-      tree.rotation.y = currentRotationY;
+      currentAzimuth += (targetAzimuth - currentAzimuth) * ORBIT_SPEED;
+      currentElevation += (targetElevation - currentElevation) * ORBIT_SPEED;
+      currentDistance += (targetDistance - currentDistance) * ORBIT_SPEED;
       
-      // Smooth camera position
-      currentCameraY += (targetCameraY - currentCameraY) * CAMERA_SPEED;
-      currentCameraZ += (targetCameraZ - currentCameraZ) * CAMERA_SPEED;
+      // Normalize azimuth
+      while (currentAzimuth >= 360) currentAzimuth -= 360;
+      while (currentAzimuth < 0) currentAzimuth += 360;
       
-      camera.position.y = currentCameraY;
-      camera.position.z = currentCameraZ;
-      camera.lookAt(0, 2.5, 0);
+      // Update camera position
+      updateCameraPosition();
       
       // Rotate star
       const star = tree.getObjectByName('star');
@@ -907,8 +965,8 @@
           
           if (positions[i + 1] < 0) {
             positions[i + 1] = 15;
-            positions[i] = (Math.random() - 0.5) * 20;
-            positions[i + 2] = (Math.random() - 0.5) * 20;
+            positions[i] = (Math.random() - 0.5) * 25;
+            positions[i + 2] = (Math.random() - 0.5) * 25;
           }
         }
         snow.geometry.attributes.position.needsUpdate = true;
@@ -924,7 +982,9 @@
       document.getElementById('instructions').classList.add('hide');
     }
     
-    setTimeout(hideInstructions, 15000);
+    window.hideInstructions = hideInstructions;
+    
+    setTimeout(hideInstructions, 18000);
     
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -951,11 +1011,11 @@
       }
       
       loadingEl.classList.add('hide');
-      updateGesture('idle', '✋ Di chuyển tay để bắt đầu');
+      updateGesture('idle', '✋ Di chuyển tay để quay camera 360°');
       animate();
       
-      console.log('🚀 PREDICTIVE AI TRACKING ACTIVATED');
-      console.log('🔮 Features: Double Exponential Smoothing + Motion Prediction + Dead Reckoning');
+      console.log('🚀 360° ORBITAL CAMERA ACTIVATED');
+      console.log('🌐 Full spherical control | Circular motion detection');
     }
     
     init();
