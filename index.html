@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎄 AR Cây Thông Noel - Hand Controlled</title>
+  <title>🎄 AR Cây Thông Noel - Ultra Smooth Hand Tracking</title>
   
   <style>
     * {
@@ -274,7 +274,15 @@
     let isSpinning = false;
     let ornaments = [];
     let lights = [];
-    let controlMode = 'loading'; // 'loading', 'hand', 'mouse'
+    let controlMode = 'loading';
+    
+    // SMOOTHING VARIABLES (NEW!)
+    let smoothedHandX = 0.5;
+    let smoothedPinchDist = 0.1;
+    let velocityRotation = 0;
+    let velocityScale = 0;
+    const SMOOTHING_FACTOR = 0.3; // Lower = smoother but more lag
+    const VELOCITY_DAMPING = 0.85; // Momentum effect
     
     // Mouse control
     let isDragging = false;
@@ -296,7 +304,8 @@
           video: { 
             facingMode: 'user',
             width: { ideal: 1280 },
-            height: { ideal: 720 }
+            height: { ideal: 720 },
+            frameRate: { ideal: 30 } // Higher FPS
           }
         });
         
@@ -313,7 +322,7 @@
     }
     
     // ============================================
-    // INIT MEDIAPIPE
+    // INIT MEDIAPIPE (OPTIMIZED)
     // ============================================
     async function initMediaPipe() {
       try {
@@ -329,18 +338,26 @@
         
         hands.setOptions({
           maxNumHands: 1,
-          modelComplexity: 1,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5
+          modelComplexity: 1, // Keep at 1 for balance
+          minDetectionConfidence: 0.7, // Higher = less false positives
+          minTrackingConfidence: 0.7   // Higher = smoother tracking
         });
         
         hands.onResults(onHandResults);
         
-        // Manual frame processing loop
+        // OPTIMIZED PROCESSING LOOP - 20 FPS for AI
+        let lastProcessTime = 0;
+        const AI_FPS = 20; // Increased from 10
+        const AI_INTERVAL = 1000 / AI_FPS;
+        
         const processFrame = async () => {
-          if (video.readyState === 4) {
+          const now = performance.now();
+          
+          if (video.readyState === 4 && now - lastProcessTime >= AI_INTERVAL) {
             await hands.send({ image: video });
+            lastProcessTime = now;
           }
+          
           if (controlMode === 'hand') {
             requestAnimationFrame(processFrame);
           }
@@ -348,7 +365,7 @@
         
         processFrame();
         
-        console.log('✅ MediaPipe initialized');
+        console.log('✅ MediaPipe initialized (20 FPS)');
         return true;
       } catch (err) {
         console.error('❌ MediaPipe error:', err);
@@ -357,15 +374,24 @@
     }
     
     // ============================================
-    // HAND RESULTS PROCESSING
+    // EXPONENTIAL SMOOTHING FUNCTION
+    // ============================================
+    function smoothValue(current, target, factor) {
+      return current + (target - current) * factor;
+    }
+    
+    // ============================================
+    // HAND RESULTS PROCESSING (ULTRA SMOOTH)
     // ============================================
     function onHandResults(results) {
       if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
         updateGesture('idle');
         
         const timeSince = Date.now() - lastHandSeen;
-        if (timeSince > 500) {
-          targetRotation *= 0.95;
+        if (timeSince > 300) {
+          // Apply velocity damping when hand is lost
+          velocityRotation *= VELOCITY_DAMPING;
+          targetRotation += velocityRotation;
         }
         return;
       }
@@ -388,9 +414,9 @@
       const thumbDist = dist(thumbTip, wrist);
       const indexDist = dist(indexTip, wrist);
       const middleDist = dist(middleTip, wrist);
-      const pinchDist = dist(thumbTip, indexTip);
+      const rawPinchDist = dist(thumbTip, indexTip);
       
-      // FIST
+      // FIST DETECTION
       if (thumbDist < 0.15 && indexDist < 0.18 && middleDist < 0.18) {
         if (!isSpinning) {
           updateGesture('spin');
@@ -399,26 +425,48 @@
         return;
       }
       
-      // PINCH
-      if (pinchDist < 0.12) {
+      // PINCH DETECTION WITH SMOOTHING
+      if (rawPinchDist < 0.15) {
         updateGesture('zoom');
-        const normalizedDist = Math.max(0.02, Math.min(0.3, pinchDist));
-        targetScale = Math.max(0.6, Math.min(2.5, normalizedDist * 10));
+        
+        // Smooth pinch distance
+        smoothedPinchDist = smoothValue(smoothedPinchDist, rawPinchDist, SMOOTHING_FACTOR);
+        
+        const normalizedDist = Math.max(0.02, Math.min(0.3, smoothedPinchDist));
+        const newScale = Math.max(0.6, Math.min(2.5, normalizedDist * 10));
+        
+        // Velocity-based scaling
+        velocityScale = (newScale - targetScale) * 0.3;
+        targetScale = newScale;
+        
         return;
       }
       
-      // ROTATION
-      const handX = wrist.x;
-      const centered = (handX - 0.5) * 2;
+      // ROTATION CONTROL WITH ADVANCED SMOOTHING
+      const rawHandX = wrist.x;
       
-      const DEADZONE = 0.25;
+      // Exponential smoothing for hand position
+      smoothedHandX = smoothValue(smoothedHandX, rawHandX, SMOOTHING_FACTOR);
+      
+      const centered = (smoothedHandX - 0.5) * 2; // -1 to 1
+      
+      const DEADZONE = 0.2;
+      const SENSITIVITY = 0.08; // Increased for more responsive
       
       if (Math.abs(centered) < DEADZONE) {
         updateGesture('idle');
-        targetRotation *= 0.92;
+        
+        // Apply damping to velocity
+        velocityRotation *= 0.9;
+        targetRotation += velocityRotation;
       } else {
         updateGesture(centered < 0 ? 'left' : 'right');
-        targetRotation += centered * 0.05;
+        
+        // Calculate rotation with velocity
+        const rotationDelta = centered * SENSITIVITY;
+        velocityRotation = velocityRotation * 0.7 + rotationDelta * 0.3;
+        
+        targetRotation += velocityRotation;
       }
     }
     
@@ -721,7 +769,7 @@
     }
     
     // ============================================
-    // ANIMATION
+    // ANIMATION (OPTIMIZED INTERPOLATION)
     // ============================================
     function animate() {
       requestAnimationFrame(animate);
@@ -734,10 +782,14 @@
         lastTime = now;
       }
       
-      rotation += (targetRotation - rotation) * 0.08;
+      // SMOOTHER INTERPOLATION
+      const LERP_ROTATION = 0.12; // Slightly faster
+      const LERP_SCALE = 0.1;
+      
+      rotation += (targetRotation - rotation) * LERP_ROTATION;
       tree.rotation.y = rotation;
       
-      scale += (targetScale - scale) * 0.08;
+      scale += (targetScale - scale) * LERP_SCALE;
       tree.scale.set(scale, scale, scale);
       
       const star = tree.getObjectByName('star');
@@ -803,10 +855,10 @@
         
         if (mpOK) {
           controlMode = 'hand';
-          modeBadge.textContent = '✋ Hand Tracking';
+          modeBadge.textContent = '✋ Hand Tracking (20 FPS)';
           modeBadge.style.color = '#0f0';
           updateGesture('idle');
-          console.log('✅ Hand tracking mode');
+          console.log('✅ Hand tracking mode - ULTRA SMOOTH');
         } else {
           controlMode = 'mouse';
           initMouseControls();
