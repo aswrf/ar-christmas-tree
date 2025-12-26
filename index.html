@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎄 Cây Thông Noel 3D</title>
+  <title>🎄 AR Cây Thông Noel - Hand Controlled</title>
   
   <style>
     * {
@@ -14,19 +14,27 @@
     
     body {
       overflow: hidden;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(to bottom, #0a1f2e, #1a3a4a);
+      font-family: 'Georgia', serif;
+      background: #000;
     }
     
     #canvas {
-      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100vw;
       height: 100vh;
-      cursor: grab;
     }
     
-    #canvas:active {
-      cursor: grabbing;
+    #video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      transform: scaleX(-1);
+      z-index: -1;
     }
     
     .ui {
@@ -34,15 +42,19 @@
       color: white;
       font-size: 14px;
       z-index: 10;
-      background: rgba(0,0,0,0.7);
-      padding: 10px 20px;
-      border-radius: 25px;
-      backdrop-filter: blur(10px);
+      background: rgba(0,0,0,0.8);
+      padding: 12px 24px;
+      border-radius: 30px;
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
     }
     
     .top-left {
       top: 20px;
       left: 20px;
+      font-weight: 600;
+      font-size: 15px;
     }
     
     .top-right {
@@ -50,225 +62,522 @@
       right: 20px;
       display: flex;
       gap: 10px;
+      align-items: center;
     }
     
     .bottom {
-      bottom: 20px;
+      bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
-      text-align: center;
+      font-size: 16px;
+      font-style: italic;
+      background: linear-gradient(135deg, rgba(139,69,19,0.9), rgba(34,139,34,0.9));
+      padding: 14px 32px;
     }
     
     button {
-      background: rgba(255,255,255,0.2);
-      border: 1px solid rgba(255,255,255,0.3);
+      background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.15));
+      border: 1px solid rgba(255,255,255,0.4);
       color: white;
-      padding: 8px 16px;
-      border-radius: 20px;
+      padding: 10px 18px;
+      border-radius: 25px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: bold;
-      transition: all 0.2s;
+      transition: all 0.3s;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
     
     button:hover {
-      background: rgba(255,255,255,0.3);
+      background: linear-gradient(135deg, rgba(255,255,255,0.35), rgba(255,255,255,0.25));
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255,255,255,0.3);
     }
     
     button:active {
-      transform: scale(0.95);
+      transform: translateY(0);
     }
     
     .instructions {
       position: fixed;
-      bottom: 80px;
+      bottom: 100px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0,0,0,0.8);
-      padding: 30px;
-      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(139,69,19,0.95), rgba(34,139,34,0.95));
+      padding: 35px 40px;
+      border-radius: 25px;
       color: white;
       text-align: center;
-      max-width: 400px;
+      max-width: 450px;
       z-index: 100;
+      border: 2px solid rgba(255,215,0,0.5);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
     }
     
     .instructions h2 {
-      margin-bottom: 20px;
-      font-size: 24px;
+      margin-bottom: 24px;
+      font-size: 28px;
+      text-shadow: 0 3px 10px rgba(0,0,0,0.5);
+      color: #ffd700;
     }
     
     .instructions p {
-      margin: 10px 0;
-      font-size: 14px;
+      margin: 12px 0;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    
+    .instructions strong {
+      color: #ffd700;
     }
     
     .hide {
       display: none;
     }
     
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .gesture-icon {
+      display: inline-block;
+      font-size: 24px;
+      margin-right: 8px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    
+    .loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      flex-direction: column;
+    }
+    
+    .loading-text {
+      color: white;
+      font-size: 24px;
+      margin-top: 20px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+    
+    .float {
+      animation: float 2s ease-in-out infinite;
+      font-size: 80px;
     }
   </style>
 </head>
 <body>
+  <!-- Loading Screen -->
+  <div class="loading" id="loading">
+    <div class="float">🎄</div>
+    <div class="loading-text">Đang khởi động AR...</div>
+    <div class="loading-text" style="font-size: 14px; margin-top: 10px; opacity: 0.7;">Vui lòng cho phép camera</div>
+  </div>
+
+  <!-- Video Background -->
+  <video id="video" playsinline autoplay muted></video>
+  
   <!-- Canvas -->
   <canvas id="canvas"></canvas>
   
   <!-- UI -->
   <div class="ui top-left" id="status">
-    🖱️ Kéo để xoay
+    <span class="gesture-icon">✋</span>
+    <span id="gesture-text">Di chuyển tay để bắt đầu</span>
   </div>
   
   <div class="ui top-right">
     <div id="fps">60 FPS</div>
-    <button onclick="toggleAutoRotate()">▶️ Tự động</button>
-    <button onclick="location.reload()">🔄</button>
+    <button onclick="location.reload()">🔄 Reset</button>
   </div>
   
   <div class="ui bottom">
-    ✨ Created by Vũ Kim Vững
+    ✨ Created for Jellie
   </div>
   
   <div class="instructions" id="instructions">
-    <h2>🎄 Hướng dẫn</h2>
-    <p>🖱️ <strong>Kéo chuột</strong> để xoay cây</p>
-    <p>🔍 <strong>Lăn chuột</strong> để zoom</p>
-    <p>👆 <strong>Double-click</strong> để xoay 360°</p>
-    <button onclick="hideInstructions()" style="margin-top: 20px;">Đã hiểu</button>
+    <h2>🎄 Hướng dẫn điều khiển bằng tay</h2>
+    <p>✋ <strong>Di chuyển tay trái/phải</strong> để xoay cây thông</p>
+    <p>🤏 <strong>Véo ngón cái + ngón trỏ</strong> để phóng to/thu nhỏ</p>
+    <p>✊ <strong>Nắm đấm</strong> để kích hoạt xoay vòng 360°</p>
+    <button onclick="hideInstructions()" style="margin-top: 24px; padding: 12px 32px; font-size: 15px;">
+      Bắt đầu trải nghiệm 🎅
+    </button>
   </div>
 
   <!-- Three.js -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  
+  <!-- MediaPipe -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1620248168/camera_utils.js"></script>
   
   <script>
     // ============================================
     // GLOBAL VARIABLES
     // ============================================
     let scene, camera, renderer, tree;
-    let isDragging = false;
-    let previousMouseX = 0;
     let rotation = 0;
     let targetRotation = 0;
     let scale = 1;
     let targetScale = 1;
-    let autoRotate = false;
     let frameCount = 0;
     let lastTime = Date.now();
+    let hands, cameraUtil;
+    let lastHandSeen = Date.now();
+    let isSpinning = false;
+    let ornaments = [];
+    let lights = [];
     
     const canvas = document.getElementById('canvas');
-    const statusEl = document.getElementById('status');
+    const video = document.getElementById('video');
+    const gestureTextEl = document.getElementById('gesture-text');
     const fpsEl = document.getElementById('fps');
+    const loadingEl = document.getElementById('loading');
+    
+    // ============================================
+    // INIT CAMERA
+    // ============================================
+    async function initCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: 'user',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        });
+        
+        video.srcObject = stream;
+        await video.play();
+        
+        console.log('✅ Camera initialized');
+        return true;
+      } catch (err) {
+        console.error('❌ Camera error:', err);
+        alert('Không thể truy cập camera. Vui lòng cho phép quyền camera trong trình duyệt.');
+        return false;
+      }
+    }
+    
+    // ============================================
+    // INIT MEDIAPIPE
+    // ============================================
+    async function initMediaPipe() {
+      try {
+        hands = new Hands({
+          locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`;
+          }
+        });
+        
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5
+        });
+        
+        hands.onResults(onHandResults);
+        
+        cameraUtil = new Camera(video, {
+          onFrame: async () => {
+            await hands.send({ image: video });
+          },
+          width: 1280,
+          height: 720
+        });
+        
+        await cameraUtil.start();
+        
+        console.log('✅ MediaPipe initialized');
+        return true;
+      } catch (err) {
+        console.error('❌ MediaPipe error:', err);
+        return false;
+      }
+    }
+    
+    // ============================================
+    // HAND RESULTS PROCESSING
+    // ============================================
+    function onHandResults(results) {
+      if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+        updateGesture('idle');
+        
+        // Decay rotation when no hand
+        const timeSince = Date.now() - lastHandSeen;
+        if (timeSince > 500) {
+          targetRotation *= 0.95;
+        }
+        return;
+      }
+      
+      lastHandSeen = Date.now();
+      const landmarks = results.multiHandLandmarks[0];
+      
+      // Get key points
+      const wrist = landmarks[0];
+      const thumbTip = landmarks[4];
+      const indexTip = landmarks[8];
+      const middleTip = landmarks[12];
+      const ringTip = landmarks[16];
+      const pinkyTip = landmarks[20];
+      
+      // Helper function
+      const dist = (p1, p2) => {
+        const dx = p1.x - p2.x;
+        const dy = p1.y - p2.y;
+        const dz = (p1.z || 0) - (p2.z || 0);
+        return Math.sqrt(dx*dx + dy*dy + dz*dz);
+      };
+      
+      // Calculate distances
+      const thumbDist = dist(thumbTip, wrist);
+      const indexDist = dist(indexTip, wrist);
+      const middleDist = dist(middleTip, wrist);
+      const pinchDist = dist(thumbTip, indexTip);
+      
+      // 1. FIST DETECTION (Magic Spin)
+      if (thumbDist < 0.15 && indexDist < 0.18 && middleDist < 0.18) {
+        if (!isSpinning) {
+          updateGesture('spin');
+          triggerMagicSpin();
+        }
+        return;
+      }
+      
+      // 2. PINCH DETECTION (Zoom)
+      if (pinchDist < 0.12) {
+        updateGesture('zoom');
+        const normalizedDist = Math.max(0.02, Math.min(0.3, pinchDist));
+        targetScale = Math.max(0.6, Math.min(2.5, normalizedDist * 10));
+        return;
+      }
+      
+      // 3. ROTATION CONTROL
+      const handX = wrist.x;
+      const centered = (handX - 0.5) * 2; // -1 to 1
+      
+      const DEADZONE = 0.25;
+      
+      if (Math.abs(centered) < DEADZONE) {
+        updateGesture('idle');
+        targetRotation *= 0.92;
+      } else {
+        if (centered < 0) {
+          updateGesture('left');
+        } else {
+          updateGesture('right');
+        }
+        
+        targetRotation += centered * 0.05;
+      }
+    }
+    
+    // ============================================
+    // UPDATE GESTURE UI
+    // ============================================
+    function updateGesture(type) {
+      const gestures = {
+        idle: { icon: '✋', text: 'Di chuyển tay để xoay' },
+        left: { icon: '↶', text: 'Đang xoay trái' },
+        right: { icon: '↷', text: 'Đang xoay phải' },
+        zoom: { icon: '🔍', text: 'Đang zoom' },
+        spin: { icon: '✨', text: 'Xoay vòng ma thuật!' }
+      };
+      
+      const gesture = gestures[type] || gestures.idle;
+      document.querySelector('.gesture-icon').textContent = gesture.icon;
+      gestureTextEl.textContent = gesture.text;
+    }
+    
+    // ============================================
+    // MAGIC SPIN
+    // ============================================
+    function triggerMagicSpin() {
+      isSpinning = true;
+      const start = targetRotation;
+      const duration = 2000;
+      const startTime = Date.now();
+      
+      // Burst effect
+      lights.forEach((light, i) => {
+        setTimeout(() => {
+          light.intensity = 3;
+          setTimeout(() => light.intensity = 1.5, 100);
+        }, i * 50);
+      });
+      
+      function spin() {
+        const elapsed = Date.now() - startTime;
+        if (elapsed < duration) {
+          const progress = elapsed / duration;
+          targetRotation = start + (Math.PI * 2) * progress;
+          requestAnimationFrame(spin);
+        } else {
+          isSpinning = false;
+        }
+      }
+      
+      spin();
+    }
     
     // ============================================
     // SCENE SETUP
     // ============================================
-    function init() {
+    function initScene() {
       // Scene
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0a1f2e);
+      scene.fog = new THREE.Fog(0x0a1f2e, 5, 15);
       
       // Camera
       const aspect = window.innerWidth / window.innerHeight;
       camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
-      camera.position.set(0, 3, 8);
-      camera.lookAt(0, 2, 0);
+      camera.position.set(0, 3, 7);
+      camera.lookAt(0, 2.5, 0);
       
       // Renderer
       renderer = new THREE.WebGLRenderer({ 
         canvas: canvas,
+        alpha: true,
         antialias: true 
       });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       
       // Lights
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
       scene.add(ambientLight);
       
       const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
       directionalLight.position.set(5, 10, 5);
+      directionalLight.castShadow = true;
       scene.add(directionalLight);
       
-      const topLight = new THREE.DirectionalLight(0xffffff, 0.4);
+      const topLight = new THREE.DirectionalLight(0xffffaa, 0.4);
       topLight.position.set(0, 15, 0);
       scene.add(topLight);
       
-      // Create tree
+      // Rim light
+      const rimLight = new THREE.DirectionalLight(0x88ccff, 0.3);
+      rimLight.position.set(-5, 5, -5);
+      scene.add(rimLight);
+      
       createTree();
-      
-      // Create snow
       createSnow();
-      
-      // Create ground
-      const ground = new THREE.Mesh(
-        new THREE.CircleGeometry(12, 32),
-        new THREE.MeshPhongMaterial({ color: 0x1a3a4a })
-      );
-      ground.rotation.x = -Math.PI / 2;
-      scene.add(ground);
       
       console.log('✅ Scene initialized');
     }
     
     // ============================================
-    // CREATE CHRISTMAS TREE
+    // CREATE ENHANCED TREE
     // ============================================
     function createTree() {
       tree = new THREE.Group();
       
-      // Trunk
-      const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.2, 0.25, 1, 12),
-        new THREE.MeshPhongMaterial({ color: 0x5c3317 })
-      );
-      trunk.position.y = 0.5;
+      // Trunk with texture
+      const trunkGeo = new THREE.CylinderGeometry(0.22, 0.28, 1.2, 16);
+      const trunkMat = new THREE.MeshStandardMaterial({ 
+        color: 0x4a2511,
+        roughness: 0.9,
+        metalness: 0.1
+      });
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = 0.6;
+      trunk.castShadow = true;
       tree.add(trunk);
       
-      // Foliage
-      const green = new THREE.MeshPhongMaterial({ color: 0x0d5c2d });
+      // Foliage - 4 tiers with gradient
+      const foliageColors = [0x0d5c2d, 0x0f6e35, 0x11803d, 0x139245];
+      const tierSizes = [
+        { radius: 1.4, height: 1.7, y: 1.7 },
+        { radius: 1.1, height: 1.4, y: 2.6 },
+        { radius: 0.8, height: 1.2, y: 3.4 },
+        { radius: 0.5, height: 0.9, y: 4.1 }
+      ];
       
-      const tier1 = new THREE.Mesh(new THREE.ConeGeometry(1.3, 1.6, 12), green);
-      tier1.position.y = 1.6;
-      tree.add(tier1);
+      tierSizes.forEach((size, i) => {
+        const foliage = new THREE.Mesh(
+          new THREE.ConeGeometry(size.radius, size.height, 16),
+          new THREE.MeshStandardMaterial({ 
+            color: foliageColors[i],
+            roughness: 0.8,
+            metalness: 0.2,
+            flatShading: false
+          })
+        );
+        foliage.position.y = size.y;
+        foliage.castShadow = true;
+        tree.add(foliage);
+      });
       
-      const tier2 = new THREE.Mesh(new THREE.ConeGeometry(1, 1.3, 12), green);
-      tier2.position.y = 2.5;
-      tree.add(tier2);
-      
-      const tier3 = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.1, 12), green);
-      tier3.position.y = 3.3;
-      tree.add(tier3);
-      
-      // Star
-      const star = new THREE.Mesh(
-        new THREE.IcosahedronGeometry(0.3, 0),
-        new THREE.MeshBasicMaterial({ 
-          color: 0xffd700,
-          emissive: 0xffd700
-        })
-      );
-      star.position.y = 4.2;
+      // Star - Enhanced
+      const starGeo = new THREE.IcosahedronGeometry(0.35, 1);
+      const starMat = new THREE.MeshStandardMaterial({ 
+        color: 0xffd700,
+        emissive: 0xffaa00,
+        emissiveIntensity: 1.5,
+        metalness: 0.9,
+        roughness: 0.1
+      });
+      const star = new THREE.Mesh(starGeo, starMat);
+      star.position.y = 4.9;
       star.name = 'star';
       tree.add(star);
       
-      // Ornaments
-      const colors = [0xff0000, 0x0000ff, 0xffd700, 0xff1493, 0x00ff00];
+      // Star glow
+      const starGlow = new THREE.PointLight(0xffd700, 2, 5);
+      starGlow.position.copy(star.position);
+      tree.add(starGlow);
       
-      for (let i = 0; i < 15; i++) {
+      // Ornaments - More varied
+      const ornamentData = [
+        { color: 0xff0000, metalness: 0.9 }, // Red metallic
+        { color: 0x0000ff, metalness: 0.7 }, // Blue
+        { color: 0xffd700, metalness: 1.0 }, // Gold
+        { color: 0xff1493, metalness: 0.6 }, // Pink
+        { color: 0x00ff00, metalness: 0.5 }, // Green
+        { color: 0xff4500, metalness: 0.8 }, // Orange
+        { color: 0x9370db, metalness: 0.7 }, // Purple
+        { color: 0xff69b4, metalness: 0.6 }  // Hot pink
+      ];
+      
+      ornaments = [];
+      
+      for (let i = 0; i < 24; i++) {
+        const data = ornamentData[i % ornamentData.length];
+        
         const ornament = new THREE.Mesh(
-          new THREE.SphereGeometry(0.1, 8, 8),
+          new THREE.SphereGeometry(0.08 + Math.random() * 0.04, 16, 16),
           new THREE.MeshStandardMaterial({
-            color: colors[i % colors.length],
-            metalness: 0.7,
-            roughness: 0.3
+            color: data.color,
+            metalness: data.metalness,
+            roughness: 0.2,
+            emissive: data.color,
+            emissiveIntensity: 0.4
           })
         );
         
-        const angle = (i * 137.5) * Math.PI / 180;
-        const radius = 0.4 + Math.random() * 0.4;
-        const height = 1.5 + Math.random() * 2;
+        const tier = Math.floor(i / 6);
+        const angle = (i * 137.5) * Math.PI / 180; // Golden angle
+        const radius = 0.4 + Math.random() * 0.5 - tier * 0.12;
+        const height = 1.5 + tier * 0.8 + Math.random() * 0.4;
         
         ornament.position.set(
           Math.cos(angle) * radius,
@@ -276,40 +585,50 @@
           Math.sin(angle) * radius
         );
         
+        ornament.castShadow = true;
         tree.add(ornament);
+        ornaments.push(ornament);
+        
+        // Small light per ornament
+        const ornamentLight = new THREE.PointLight(data.color, 0.5, 1);
+        ornamentLight.position.copy(ornament.position);
+        tree.add(ornamentLight);
+        lights.push(ornamentLight);
       }
       
-      // Light
-      const light = new THREE.PointLight(0xffaa00, 2, 8);
-      light.position.set(0, 2.2, 0);
-      tree.add(light);
+      // Main internal light
+      const mainLight = new THREE.PointLight(0xffaa44, 3, 10);
+      mainLight.position.set(0, 2.5, 0);
+      tree.add(mainLight);
+      lights.push(mainLight);
       
       scene.add(tree);
       
-      console.log('🎄 Tree created');
+      console.log('🎄 Enhanced tree created');
     }
     
     // ============================================
     // CREATE SNOW
     // ============================================
     function createSnow() {
-      const particleCount = 100;
+      const particleCount = 150;
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(particleCount * 3);
       
       for (let i = 0; i < particleCount; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * 15;
-        positions[i * 3 + 1] = Math.random() * 12;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 15;
+        positions[i * 3] = (Math.random() - 0.5) * 20;
+        positions[i * 3 + 1] = Math.random() * 15;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
       }
       
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       
       const material = new THREE.PointsMaterial({
         color: 0xffffff,
-        size: 0.1,
+        size: 0.12,
         transparent: true,
-        opacity: 0.8
+        opacity: 0.9,
+        sizeAttenuation: true
       });
       
       const snow = new THREE.Points(geometry, material);
@@ -325,7 +644,7 @@
     function animate() {
       requestAnimationFrame(animate);
       
-      // FPS counter
+      // FPS
       frameCount++;
       const now = Date.now();
       if (now - lastTime > 1000) {
@@ -334,33 +653,45 @@
         lastTime = now;
       }
       
-      // Auto rotate
-      if (autoRotate) {
-        targetRotation += 0.005;
-      }
-      
       // Smooth rotation
-      rotation += (targetRotation - rotation) * 0.1;
+      rotation += (targetRotation - rotation) * 0.08;
       tree.rotation.y = rotation;
       
       // Smooth scale
-      scale += (targetScale - scale) * 0.1;
+      scale += (targetScale - scale) * 0.08;
       tree.scale.set(scale, scale, scale);
       
       // Rotate star
       const star = tree.getObjectByName('star');
       if (star) {
-        star.rotation.y += 0.02;
+        star.rotation.y += 0.03;
+        star.rotation.z = Math.sin(now * 0.001) * 0.2;
       }
+      
+      // Pulsating ornament lights
+      lights.forEach((light, i) => {
+        const pulse = Math.sin(now * 0.002 + i * 0.5) * 0.5 + 0.5;
+        light.intensity = 0.5 + pulse * 1;
+      });
+      
+      // Sparkle ornaments
+      ornaments.forEach((ornament, i) => {
+        const sparkle = Math.sin(now * 0.003 + i) * 0.5 + 0.5;
+        ornament.material.emissiveIntensity = 0.3 + sparkle * 0.5;
+      });
       
       // Animate snow
       const snow = scene.getObjectByName('snow');
       if (snow) {
         const positions = snow.geometry.attributes.position.array;
         for (let i = 0; i < positions.length; i += 3) {
-          positions[i + 1] -= 0.02;
+          positions[i + 1] -= 0.025;
+          positions[i] += Math.sin(now * 0.001 + i) * 0.001;
+          
           if (positions[i + 1] < 0) {
-            positions[i + 1] = 12;
+            positions[i + 1] = 15;
+            positions[i] = (Math.random() - 0.5) * 20;
+            positions[i + 2] = (Math.random() - 0.5) * 20;
           }
         }
         snow.geometry.attributes.position.needsUpdate = true;
@@ -370,95 +701,16 @@
     }
     
     // ============================================
-    // CONTROLS
-    // ============================================
-    canvas.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      previousMouseX = e.clientX;
-      autoRotate = false;
-      updateStatus();
-    });
-    
-    canvas.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      
-      const deltaX = e.clientX - previousMouseX;
-      targetRotation += deltaX * 0.01;
-      previousMouseX = e.clientX;
-    });
-    
-    canvas.addEventListener('mouseup', () => {
-      isDragging = false;
-    });
-    
-    canvas.addEventListener('mouseleave', () => {
-      isDragging = false;
-    });
-    
-    canvas.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const delta = e.deltaY * -0.001;
-      targetScale = Math.max(0.5, Math.min(2.5, targetScale + delta));
-    });
-    
-    canvas.addEventListener('dblclick', () => {
-      const start = targetRotation;
-      const duration = 2000;
-      const startTime = Date.now();
-      
-      function spin() {
-        const elapsed = Date.now() - startTime;
-        if (elapsed < duration) {
-          const progress = elapsed / duration;
-          targetRotation = start + (Math.PI * 2) * progress;
-          requestAnimationFrame(spin);
-        }
-      }
-      
-      spin();
-    });
-    
-    // Touch support
-    canvas.addEventListener('touchstart', (e) => {
-      isDragging = true;
-      previousMouseX = e.touches[0].clientX;
-      autoRotate = false;
-      updateStatus();
-    });
-    
-    canvas.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-      
-      const deltaX = e.touches[0].clientX - previousMouseX;
-      targetRotation += deltaX * 0.01;
-      previousMouseX = e.touches[0].clientX;
-    });
-    
-    canvas.addEventListener('touchend', () => {
-      isDragging = false;
-    });
-    
-    // ============================================
     // UI FUNCTIONS
     // ============================================
-    function toggleAutoRotate() {
-      autoRotate = !autoRotate;
-      updateStatus();
-    }
-    
-    function updateStatus() {
-      statusEl.textContent = autoRotate ? '🔄 Tự động xoay' : '🖱️ Kéo để xoay';
-    }
-    
     function hideInstructions() {
       document.getElementById('instructions').classList.add('hide');
     }
     
-    // Auto hide instructions
-    setTimeout(hideInstructions, 8000);
+    setTimeout(hideInstructions, 10000);
     
     // ============================================
-    // RESIZE HANDLER
+    // RESIZE
     // ============================================
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -467,12 +719,29 @@
     });
     
     // ============================================
-    // START
+    // INITIALIZATION
     // ============================================
-    init();
-    animate();
+    async function init() {
+      const cameraOK = await initCamera();
+      if (!cameraOK) {
+        loadingEl.innerHTML = '<div style="color:white; text-align:center;"><h2>❌ Lỗi Camera</h2><p>Vui lòng cho phép truy cập camera</p><button onclick="location.reload()" style="margin-top:20px;">Thử lại</button></div>';
+        return;
+      }
+      
+      initScene();
+      
+      const mpOK = await initMediaPipe();
+      if (!mpOK) {
+        console.warn('⚠️ MediaPipe failed, but scene is running');
+      }
+      
+      loadingEl.classList.add('hide');
+      animate();
+      
+      console.log('🚀 App started');
+    }
     
-    console.log('🚀 App started');
+    init();
   </script>
 </body>
 </html>
