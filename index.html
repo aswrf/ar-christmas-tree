@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎄 AR Cây Thông Noel - Advanced Camera Control</title>
+  <title>🎄 AR Cây Thông Noel - Ultra Precise Hand Tracking</title>
   
   <style>
     * {
@@ -60,7 +60,7 @@
       left: 20px;
       font-weight: 600;
       font-size: 15px;
-      max-width: 280px;
+      max-width: 300px;
     }
     
     .top-right {
@@ -97,7 +97,6 @@
     button:hover {
       background: linear-gradient(135deg, rgba(255,255,255,0.35), rgba(255,255,255,0.25));
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255,255,255,0.3);
     }
     
     .instructions {
@@ -173,6 +172,20 @@
       animation: float 2s ease-in-out infinite;
       font-size: 80px;
     }
+    
+    .confidence-bar {
+      margin-top: 8px;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    
+    .confidence-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f00, #ff0, #0f0);
+      transition: width 0.1s;
+    }
   </style>
 </head>
 <body>
@@ -192,11 +205,13 @@
   <!-- UI -->
   <div class="ui top-left" id="status">
     <div><span class="gesture-icon">✋</span> <span id="gesture-text">Đang khởi động...</span></div>
+    <div class="confidence-bar"><div class="confidence-fill" id="confidenceFill" style="width: 0%"></div></div>
     <div style="font-size: 11px; margin-top: 6px; opacity: 0.8;" id="details"></div>
   </div>
   
   <div class="ui top-right">
     <div id="fps">60 FPS</div>
+    <div id="aiFps" style="font-size: 11px; opacity: 0.7;">AI: 0</div>
     <button onclick="location.reload()">🔄</button>
   </div>
   
@@ -209,6 +224,7 @@
     <p>← → <strong>Tay trái/phải</strong> để xoay cây</p>
     <p>↑ ↓ <strong>Tay lên/xuống</strong> để thay đổi góc nhìn</p>
     <p>🤏 <strong>Véo ngón</strong> để zoom in/out</p>
+    <p style="font-size: 13px; margin-top: 20px; opacity: 0.8;">💡 Tip: Di chuyển tay chậm và rõ ràng để tracking chính xác hơn</p>
     <button onclick="hideInstructions()" style="margin-top: 24px; padding: 12px 32px; font-size: 15px;">
       Bắt đầu 🎅
     </button>
@@ -222,6 +238,30 @@
   
   <script>
     // ============================================
+    // KALMAN FILTER CLASS
+    // ============================================
+    class KalmanFilter {
+      constructor(processNoise = 0.01, measurementNoise = 0.1) {
+        this.processNoise = processNoise;
+        this.measurementNoise = measurementNoise;
+        this.estimate = 0;
+        this.errorCovariance = 1;
+      }
+      
+      filter(measurement) {
+        // Prediction
+        const predictionErrorCovariance = this.errorCovariance + this.processNoise;
+        
+        // Update
+        const kalmanGain = predictionErrorCovariance / (predictionErrorCovariance + this.measurementNoise);
+        this.estimate = this.estimate + kalmanGain * (measurement - this.estimate);
+        this.errorCovariance = (1 - kalmanGain) * predictionErrorCovariance;
+        
+        return this.estimate;
+      }
+    }
+    
+    // ============================================
     // GLOBAL VARIABLES
     // ============================================
     let scene, camera, renderer, tree;
@@ -234,40 +274,67 @@
     let targetCameraY = 3;
     let currentCameraY = 3;
     
-    // Zoom (camera Z)
+    // Zoom
     let targetCameraZ = 7;
     let currentCameraZ = 7;
     
     let frameCount = 0;
+    let aiFrameCount = 0;
     let lastTime = Date.now();
+    let lastAITime = Date.now();
     let hands;
     let ornaments = [];
     let lights = [];
     
-    // ULTRA SMOOTHING BUFFERS
-    const BUFFER_SIZE = 5;
-    let handXBuffer = [];
-    let handYBuffer = [];
-    let pinchBuffer = [];
+    // KALMAN FILTERS for ultra smooth tracking
+    const kalmanX = new KalmanFilter(0.005, 0.05);
+    const kalmanY = new KalmanFilter(0.005, 0.05);
+    const kalmanPinch = new KalmanFilter(0.01, 0.1);
+    
+    // Hand stability detection
+    let lastHandX = 0.5;
+    let lastHandY = 0.5;
+    let handVelocityX = 0;
+    let handVelocityY = 0;
+    
+    // Adaptive smoothing
+    let adaptiveSmoothingFactor = 0.15;
+    
+    // Gesture confidence
+    let gestureConfidence = 0;
+    let lastGestureTime = 0;
     
     const canvas = document.getElementById('canvas');
     const video = document.getElementById('video');
     const gestureTextEl = document.getElementById('gesture-text');
     const detailsEl = document.getElementById('details');
     const fpsEl = document.getElementById('fps');
+    const aiFpsEl = document.getElementById('aiFps');
+    const confidenceFillEl = document.getElementById('confidenceFill');
     const loadingEl = document.getElementById('loading');
     
     // ============================================
-    // MOVING AVERAGE SMOOTHING
+    // ADAPTIVE SMOOTHING
     // ============================================
-    function addToBuffer(buffer, value, size = BUFFER_SIZE) {
-      buffer.push(value);
-      if (buffer.length > size) buffer.shift();
-      return buffer.reduce((a, b) => a + b) / buffer.length;
+    function calculateAdaptiveSmoothingFactor(velocity) {
+      // Fast movement = less smoothing (more responsive)
+      // Slow movement = more smoothing (more stable)
+      const speed = Math.abs(velocity);
+      
+      if (speed > 0.05) {
+        return 0.25; // Fast response
+      } else if (speed > 0.02) {
+        return 0.15; // Balanced
+      } else {
+        return 0.08; // Ultra smooth for slow movements
+      }
     }
     
-    function smoothLerp(current, target, speed = 0.15) {
-      return current + (target - current) * speed;
+    // ============================================
+    // SMOOTH LERP
+    // ============================================
+    function smoothLerp(current, target, factor) {
+      return current + (target - current) * factor;
     }
     
     // ============================================
@@ -278,9 +345,9 @@
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: 'user',
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 30 }
+            width: { ideal: 1920 }, // Higher resolution for better tracking
+            height: { ideal: 1080 },
+            frameRate: { ideal: 60 } // Max FPS
           }
         });
         
@@ -288,7 +355,7 @@
         await video.play();
         video.classList.add('active');
         
-        console.log('✅ Camera initialized');
+        console.log('✅ Camera initialized (1920x1080@60fps)');
         return true;
       } catch (err) {
         console.error('❌ Camera error:', err);
@@ -298,7 +365,7 @@
     }
     
     // ============================================
-    // INIT MEDIAPIPE
+    // INIT MEDIAPIPE - MAX PERFORMANCE
     // ============================================
     async function initMediaPipe() {
       try {
@@ -314,16 +381,17 @@
         
         hands.setOptions({
           maxNumHands: 1,
-          modelComplexity: 1,
-          minDetectionConfidence: 0.7,
-          minTrackingConfidence: 0.7
+          modelComplexity: 1, // Best balance
+          minDetectionConfidence: 0.8, // Higher = better quality detections
+          minTrackingConfidence: 0.8,  // Higher = smoother tracking
+          selfieMode: true
         });
         
         hands.onResults(onHandResults);
         
-        // Processing loop - 25 FPS for smooth tracking
+        // ULTRA HIGH FREQUENCY PROCESSING - 30 FPS
         let lastProcessTime = 0;
-        const AI_FPS = 25;
+        const AI_FPS = 30;
         const AI_INTERVAL = 1000 / AI_FPS;
         
         const processFrame = async () => {
@@ -332,6 +400,14 @@
           if (video.readyState === 4 && now - lastProcessTime >= AI_INTERVAL) {
             await hands.send({ image: video });
             lastProcessTime = now;
+            
+            // AI FPS counter
+            aiFrameCount++;
+            if (now - lastAITime > 1000) {
+              aiFpsEl.textContent = `AI: ${aiFrameCount}`;
+              aiFrameCount = 0;
+              lastAITime = now;
+            }
           }
           
           requestAnimationFrame(processFrame);
@@ -339,7 +415,7 @@
         
         processFrame();
         
-        console.log('✅ MediaPipe initialized (25 FPS)');
+        console.log('✅ MediaPipe initialized (30 FPS, High Confidence)');
         return true;
       } catch (err) {
         console.error('❌ MediaPipe error:', err);
@@ -348,11 +424,15 @@
     }
     
     // ============================================
-    // HAND RESULTS PROCESSING
+    // HAND RESULTS PROCESSING - ULTRA PRECISE
     // ============================================
     function onHandResults(results) {
       if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-        updateGesture('idle', '');
+        updateGesture('idle', '', 0);
+        
+        // Decay confidence
+        gestureConfidence *= 0.95;
+        
         return;
       }
       
@@ -372,84 +452,123 @@
         return Math.sqrt(dx*dx + dy*dy + dz*dz);
       };
       
-      const thumbDist = dist(thumbTip, wrist);
-      const indexDist = dist(indexTip, wrist);
-      const middleDist = dist(middleTip, wrist);
       const pinchDist = dist(thumbTip, indexTip);
       
-      // GESTURE PRIORITY:
+      // RAW hand position
+      const rawHandX = wrist.x;
+      const rawHandY = wrist.y;
       
-      // 1. PINCH (Zoom) - Highest priority
-      if (pinchDist < 0.15) {
-        const smoothPinch = addToBuffer(pinchBuffer, pinchDist);
+      // Apply Kalman filter for ultra smooth tracking
+      const filteredX = kalmanX.filter(rawHandX);
+      const filteredY = kalmanY.filter(rawHandY);
+      const filteredPinch = kalmanPinch.filter(pinchDist);
+      
+      // Calculate hand velocity for adaptive smoothing
+      handVelocityX = filteredX - lastHandX;
+      handVelocityY = filteredY - lastHandY;
+      
+      lastHandX = filteredX;
+      lastHandY = filteredY;
+      
+      // Update adaptive smoothing factor
+      const avgVelocity = (Math.abs(handVelocityX) + Math.abs(handVelocityY)) / 2;
+      adaptiveSmoothingFactor = calculateAdaptiveSmoothingFactor(avgVelocity);
+      
+      // ============================================
+      // GESTURE PRIORITY with CONFIDENCE
+      // ============================================
+      
+      let detectedGesture = '';
+      let gesturePriority = 0;
+      
+      // 1. PINCH (Highest priority)
+      if (filteredPinch < 0.12) {
+        detectedGesture = 'zoom';
+        gesturePriority = 3;
         
-        // Map pinch to camera Z (zoom)
-        // Small pinch = zoom in (close), large pinch = zoom out (far)
-        const normalizedPinch = Math.max(0.03, Math.min(0.15, smoothPinch));
-        targetCameraZ = 4 + (normalizedPinch / 0.15) * 6; // Range: 4 to 10
+        const normalizedPinch = Math.max(0.02, Math.min(0.12, filteredPinch));
+        targetCameraZ = 4 + (normalizedPinch / 0.12) * 6;
         
-        updateGesture('zoom', `Zoom: ${targetCameraZ.toFixed(1)}m`);
-        return;
+        gestureConfidence = Math.min(1, gestureConfidence + 0.1);
+      }
+      // 2. HAND POSITION
+      else {
+        const centeredX = (filteredX - 0.5) * 2; // -1 to 1
+        const centeredY = filteredY - 0.5;       // -0.5 to 0.5
+        
+        const DEADZONE_X = 0.12; // Smaller deadzone for better response
+        const DEADZONE_Y = 0.12;
+        
+        const ROTATION_SPEED = 0.08;
+        
+        let hasMovement = false;
+        
+        // ROTATION (X-axis)
+        if (Math.abs(centeredX) > DEADZONE_X) {
+          hasMovement = true;
+          gesturePriority = 2;
+          
+          // Speed scales with distance from center
+          const scaledSpeed = ROTATION_SPEED * Math.abs(centeredX);
+          targetRotationY += centeredX * scaledSpeed;
+          
+          detectedGesture = centeredX < 0 ? 'rotate_left' : 'rotate_right';
+        }
+        
+        // CAMERA Y (Vertical)
+        if (Math.abs(centeredY) > DEADZONE_Y) {
+          hasMovement = true;
+          gesturePriority = Math.max(gesturePriority, 1);
+          
+          // Invert: hand up → camera up
+          targetCameraY = 3 - (centeredY * 4);
+          targetCameraY = Math.max(1, Math.min(6, targetCameraY));
+          
+          if (detectedGesture) {
+            detectedGesture += '_and_' + (centeredY < 0 ? 'look_up' : 'look_down');
+          } else {
+            detectedGesture = centeredY < 0 ? 'look_up' : 'look_down';
+          }
+        }
+        
+        if (hasMovement) {
+          gestureConfidence = Math.min(1, gestureConfidence + 0.05);
+        } else {
+          detectedGesture = 'idle';
+          gesturePriority = 0;
+          gestureConfidence *= 0.9;
+        }
       }
       
-      // 2. HAND POSITION (Rotation X + Camera Y)
-      const rawHandX = wrist.x; // 0 (left) to 1 (right)
-      const rawHandY = wrist.y; // 0 (top) to 1 (bottom)
+      // Build gesture text
+      let gestureText = '';
       
-      // Apply moving average smoothing
-      const smoothHandX = addToBuffer(handXBuffer, rawHandX);
-      const smoothHandY = addToBuffer(handYBuffer, rawHandY);
-      
-      // === ROTATION (X-axis) ===
-      const centeredX = (smoothHandX - 0.5) * 2; // -1 to 1
-      const DEADZONE_X = 0.15;
-      const ROTATION_SPEED = 0.06;
-      
-      if (Math.abs(centeredX) > DEADZONE_X) {
-        targetRotationY += centeredX * ROTATION_SPEED;
+      if (detectedGesture === 'rotate_left') gestureText = '↶ Xoay trái';
+      else if (detectedGesture === 'rotate_right') gestureText = '↷ Xoay phải';
+      else if (detectedGesture === 'look_up') gestureText = '↑ Nhìn lên';
+      else if (detectedGesture === 'look_down') gestureText = '↓ Nhìn xuống';
+      else if (detectedGesture === 'zoom') gestureText = `🔍 Zoom ${targetCameraZ.toFixed(1)}m`;
+      else if (detectedGesture.includes('_and_')) {
+        const parts = detectedGesture.split('_and_');
+        const text1 = parts[0] === 'rotate_left' ? '↶ Trái' : '↷ Phải';
+        const text2 = parts[1] === 'look_up' ? '↑ Lên' : '↓ Xuống';
+        gestureText = `${text1} + ${text2}`;
       }
+      else gestureText = '✋ Giữ nguyên';
       
-      // === CAMERA Y (Vertical position) ===
-      // Hand at top (y=0) → Camera high (y=5)
-      // Hand at bottom (y=1) → Camera low (y=1)
-      const DEADZONE_Y = 0.15;
-      const centeredY = smoothHandY - 0.5; // -0.5 (top) to 0.5 (bottom)
-      
-      if (Math.abs(centeredY) > DEADZONE_Y) {
-        // Invert: hand up → camera up
-        targetCameraY = 3 - (centeredY * 4); // Range: 1 to 5
-        targetCameraY = Math.max(1, Math.min(6, targetCameraY));
-      }
-      
-      // Update UI
-      let gesture = '';
-      if (Math.abs(centeredX) > DEADZONE_X) {
-        gesture = centeredX < 0 ? '↶ Xoay trái' : '↷ Xoay phải';
-      }
-      if (Math.abs(centeredY) > DEADZONE_Y) {
-        if (gesture) gesture += ' + ';
-        gesture += centeredY < 0 ? '↑ Nhìn lên' : '↓ Nhìn xuống';
-      }
-      if (!gesture) gesture = '✋ Giữ nguyên';
-      
-      updateGesture('control', gesture);
+      updateGesture(detectedGesture, gestureText, gestureConfidence);
     }
     
     // ============================================
     // UPDATE GESTURE UI
     // ============================================
-    function updateGesture(type, details) {
-      const gestures = {
-        idle: { icon: '✋', text: 'Di chuyển tay để điều khiển' },
-        control: { icon: '🎮', text: details },
-        zoom: { icon: '🔍', text: details }
-      };
+    function updateGesture(type, text, confidence) {
+      gestureTextEl.textContent = text;
       
-      const gesture = gestures[type] || gestures.idle;
-      document.querySelector('.gesture-icon').textContent = gesture.icon;
-      gestureTextEl.textContent = gesture.text;
+      const confPercent = Math.round(confidence * 100);
+      confidenceFillEl.style.width = confPercent + '%';
       
-      detailsEl.textContent = `Camera: Y=${currentCameraY.toFixed(1)} Z=${currentCameraZ.toFixed(1)} | Rotation: ${(currentRotationY % (Math.PI * 2)).toFixed(2)}`;
+      detailsEl.textContent = `Cam: Y=${currentCameraY.toFixed(1)} Z=${currentCameraZ.toFixed(1)} | Rot: ${(currentRotationY % (Math.PI * 2)).toFixed(2)} | Smooth: ${adaptiveSmoothingFactor.toFixed(2)}`;
     }
     
     // ============================================
@@ -517,7 +636,7 @@
       trunk.castShadow = true;
       tree.add(trunk);
       
-      // Foliage - 4 tiers
+      // Foliage
       const foliageColors = [0x0d5c2d, 0x0f6e35, 0x11803d, 0x139245];
       const tierSizes = [
         { radius: 1.4, height: 1.7, y: 1.7 },
@@ -665,7 +784,7 @@
     }
     
     // ============================================
-    // ANIMATION - ULTRA SMOOTH
+    // ANIMATION - ADAPTIVE SMOOTHING
     // ============================================
     function animate() {
       requestAnimationFrame(animate);
@@ -679,17 +798,17 @@
         lastTime = now;
       }
       
-      // ULTRA SMOOTH INTERPOLATION
-      const ROTATION_SPEED = 0.12;
-      const CAMERA_SPEED = 0.1;
+      // ADAPTIVE INTERPOLATION
+      const rotationSpeed = 0.2; // Faster response
+      const cameraSpeed = adaptiveSmoothingFactor;
       
       // Smooth tree rotation
-      currentRotationY = smoothLerp(currentRotationY, targetRotationY, ROTATION_SPEED);
+      currentRotationY = smoothLerp(currentRotationY, targetRotationY, rotationSpeed);
       tree.rotation.y = currentRotationY;
       
-      // Smooth camera position
-      currentCameraY = smoothLerp(currentCameraY, targetCameraY, CAMERA_SPEED);
-      currentCameraZ = smoothLerp(currentCameraZ, targetCameraZ, CAMERA_SPEED);
+      // Smooth camera position with adaptive factor
+      currentCameraY = smoothLerp(currentCameraY, targetCameraY, cameraSpeed);
+      currentCameraZ = smoothLerp(currentCameraZ, targetCameraZ, cameraSpeed);
       
       camera.position.y = currentCameraY;
       camera.position.z = currentCameraZ;
@@ -741,7 +860,7 @@
       document.getElementById('instructions').classList.add('hide');
     }
     
-    setTimeout(hideInstructions, 12000);
+    setTimeout(hideInstructions, 15000);
     
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -768,10 +887,11 @@
       }
       
       loadingEl.classList.add('hide');
-      updateGesture('idle', '');
+      updateGesture('idle', '✋ Di chuyển tay', 0);
       animate();
       
-      console.log('🚀 App started - Advanced camera control');
+      console.log('🚀 ULTRA PRECISE HAND TRACKING ACTIVATED');
+      console.log('📊 AI: 30 FPS | Kalman Filter | Adaptive Smoothing | High Confidence');
     }
     
     init();
