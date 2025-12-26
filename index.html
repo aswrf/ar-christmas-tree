@@ -3,41 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  
   <title>🎄 AR Cây Thông Noel</title>
   
-  <meta name="description" content="Điều khiển cây thông Noel 3D bằng cử chỉ tay">
-  <meta name="theme-color" content="#165B33">
-  
-  <!-- CDN Libraries -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@mediapipe/hands@0.4.1646424915/hands.js"></script>
-  <script src="https://unpkg.com/@mediapipe/camera_utils@0.3.1620248168/camera_utils.js"></script>
   
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      overflow: hidden;
-      font-family: 'Georgia', serif;
-      touch-action: none;
-      background: #000;
-    }
-    
-    html, body, #root {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; font-family: Georgia, serif; background: #000; }
+    html, body, #root { position: fixed; width: 100%; height: 100%; }
     
     @keyframes float {
       0%, 100% { transform: translateY(0px); }
@@ -48,24 +24,7 @@
       to { transform: rotate(360deg); }
     }
     
-    .float-animation {
-      animation: float 2s ease-in-out infinite;
-    }
-    
-    /* Debug panel */
-    .debug-panel {
-      position: fixed;
-      bottom: 100px;
-      left: 10px;
-      background: rgba(0,0,0,0.8);
-      color: #0f0;
-      padding: 10px;
-      font-family: monospace;
-      font-size: 10px;
-      max-width: 300px;
-      z-index: 9999;
-      border: 1px solid #0f0;
-    }
+    .float-animation { animation: float 2s ease-in-out infinite; }
   </style>
 </head>
 <body>
@@ -77,34 +36,17 @@
     const { useState, useEffect, useRef, createElement: h } = React;
     
     // ============================================
-    // ENHANCED CONFIGURATION WITH DEBUG
+    // SIMPLIFIED CONFIG - NO MEDIAPIPE DEPENDENCY
     // ============================================
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     
     const CONFIG = {
-      CAMERA_WIDTH: isMobile ? 640 : 1280,
-      CAMERA_HEIGHT: isMobile ? 480 : 720,
-      AI_FPS: isMobile ? 10 : 15,
-      SNOW_PARTICLES: isMobile ? 60 : 150,
+      SNOW_PARTICLES: isMobile ? 60 : 120,
       ORNAMENT_COUNT: isMobile ? 10 : 16,
       ENABLE_ANTIALIASING: !isMobile,
       PIXEL_RATIO: isMobile ? 1 : Math.min(window.devicePixelRatio, 2),
-      DAMPING: 0.1,
-      ROTATION_SPEED: 0.04,
-      DEBUG_MODE: true // Enable debug logs
-    };
-    
-    // ============================================
-    // DEBUG LOGGER
-    // ============================================
-    const debugLog = {
-      logs: [],
-      add(message) {
-        const timestamp = new Date().toLocaleTimeString();
-        this.logs.push(`[${timestamp}] ${message}`);
-        if (this.logs.length > 10) this.logs.shift();
-        console.log('🎄', message);
-      }
+      DAMPING: 0.08,
+      AUTO_ROTATE_SPEED: 0.005
     };
     
     // ============================================
@@ -112,482 +54,363 @@
     // ============================================
     function App() {
       const [appState, setAppState] = useState('INIT');
-      const [gesture, setGesture] = useState('idle');
       const [fps, setFPS] = useState(0);
+      const [controlMode, setControlMode] = useState('mouse'); // 'mouse' or 'auto'
       const [showInstructions, setShowInstructions] = useState(true);
-      const [errorMessage, setErrorMessage] = useState('');
-      const [debugLogs, setDebugLogs] = useState([]);
       
-      const videoRef = useRef(null);
       const canvasRef = useRef(null);
       const sceneRef = useRef(null);
-      const handsRef = useRef(null);
       const animationFrameRef = useRef(null);
       
       const targetRotation = useRef(0);
       const targetScale = useRef(1);
       const isSpinning = useRef(false);
-      const spinStartTime = useRef(0);
+      const isDragging = useRef(false);
+      const lastMouseX = useRef(0);
       
-      const lastFrameTime = useRef(performance.now());
       const frameCount = useRef(0);
-      const lastHandSeen = useRef(Date.now());
-      
-      // Update debug logs
-      useEffect(() => {
-        const interval = setInterval(() => {
-          setDebugLogs([...debugLog.logs]);
-        }, 500);
-        return () => clearInterval(interval);
-      }, []);
+      const lastFrameTime = useRef(performance.now());
       
       // ============================================
-      // CAMERA WITH ENHANCED ERROR HANDLING
-      // ============================================
-      const initCamera = async () => {
-        debugLog.add('🎥 Initializing camera...');
-        
-        try {
-          // Check if getUserMedia is available
-          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            throw new Error('getUserMedia not supported');
-          }
-          
-          const constraints = {
-            video: {
-              facingMode: 'user',
-              width: { ideal: CONFIG.CAMERA_WIDTH },
-              height: { ideal: CONFIG.CAMERA_HEIGHT }
-            },
-            audio: false
-          };
-          
-          debugLog.add('📞 Requesting camera permission...');
-          const stream = await navigator.mediaDevices.getUserMedia(constraints);
-          
-          debugLog.add('✅ Camera permission granted');
-          
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            videoRef.current.setAttribute('playsinline', 'true');
-            
-            await new Promise((resolve, reject) => {
-              videoRef.current.onloadedmetadata = () => {
-                debugLog.add('📹 Video metadata loaded');
-                videoRef.current.play()
-                  .then(() => {
-                    debugLog.add('▶️ Video playing');
-                    resolve();
-                  })
-                  .catch(reject);
-              };
-              
-              setTimeout(() => reject(new Error('Video load timeout')), 10000);
-            });
-          }
-          
-          return true;
-        } catch (err) {
-          debugLog.add(`❌ Camera error: ${err.message}`);
-          console.error('Camera initialization error:', err);
-          
-          let errorMsg = 'Không thể truy cập camera';
-          if (err.name === 'NotAllowedError') {
-            errorMsg = 'Bạn đã từ chối quyền camera. Vui lòng cho phép trong cài đặt trình duyệt.';
-          } else if (err.name === 'NotFoundError') {
-            errorMsg = 'Không tìm thấy camera trên thiết bị.';
-          }
-          
-          setErrorMessage(errorMsg);
-          setAppState('ERROR');
-          return false;
-        }
-      };
-      
-      // ============================================
-      // THREE.JS WITH DEBUG
+      // THREE.JS SCENE
       // ============================================
       const initThreeJS = () => {
-        debugLog.add('🎨 Initializing Three.js...');
+        const canvas = canvasRef.current;
+        if (!canvas) return;
         
-        try {
-          const canvas = canvasRef.current;
-          if (!canvas) {
-            throw new Error('Canvas not found');
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        
+        // Scene
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a1f2e);
+        
+        // Camera
+        const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+        camera.position.set(0, 2.5, isMobile ? 7 : 6);
+        camera.lookAt(0, 2, 0);
+        
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({
+          canvas,
+          antialias: CONFIG.ENABLE_ANTIALIASING
+        });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(CONFIG.PIXEL_RATIO);
+        
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        directionalLight.position.set(5, 10, 5);
+        scene.add(directionalLight);
+        
+        const topLight = new THREE.DirectionalLight(0xffffff, 0.4);
+        topLight.position.set(0, 15, 0);
+        scene.add(topLight);
+        
+        // ============================================
+        // CHRISTMAS TREE
+        // ============================================
+        const treeGroup = new THREE.Group();
+        
+        // Trunk
+        const trunk = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.2, 0.25, 1, 12),
+          new THREE.MeshPhongMaterial({ color: 0x5c3317 })
+        );
+        trunk.position.y = 0.5;
+        trunk.castShadow = true;
+        treeGroup.add(trunk);
+        
+        // Foliage - 3 tiers
+        const foliageMaterial = new THREE.MeshPhongMaterial({ 
+          color: 0x0d5c2d,
+          shininess: 10
+        });
+        
+        const tier1 = new THREE.Mesh(
+          new THREE.ConeGeometry(1.3, 1.6, 12), 
+          foliageMaterial
+        );
+        tier1.position.y = 1.6;
+        tier1.castShadow = true;
+        treeGroup.add(tier1);
+        
+        const tier2 = new THREE.Mesh(
+          new THREE.ConeGeometry(1, 1.3, 12), 
+          foliageMaterial
+        );
+        tier2.position.y = 2.5;
+        tier2.castShadow = true;
+        treeGroup.add(tier2);
+        
+        const tier3 = new THREE.Mesh(
+          new THREE.ConeGeometry(0.7, 1.1, 12), 
+          foliageMaterial
+        );
+        tier3.position.y = 3.3;
+        tier3.castShadow = true;
+        treeGroup.add(tier3);
+        
+        // Star on top
+        const star = new THREE.Mesh(
+          new THREE.IcosahedronGeometry(0.28, 0),
+          new THREE.MeshBasicMaterial({ 
+            color: 0xffd700,
+            emissive: 0xffd700,
+            emissiveIntensity: 1
+          })
+        );
+        star.position.y = 4.2;
+        treeGroup.add(star);
+        
+        // Ornaments
+        const ornamentColors = [
+          0xff0000, 0x0000ff, 0xffd700, 
+          0xff1493, 0x00ff00, 0xff4500,
+          0x9370db, 0xff69b4
+        ];
+        
+        const ornaments = [];
+        for (let i = 0; i < CONFIG.ORNAMENT_COUNT; i++) {
+          const ornament = new THREE.Mesh(
+            new THREE.SphereGeometry(0.1, 12, 12),
+            new THREE.MeshStandardMaterial({
+              color: ornamentColors[i % ornamentColors.length],
+              metalness: 0.8,
+              roughness: 0.2,
+              emissive: ornamentColors[i % ornamentColors.length],
+              emissiveIntensity: 0.3
+            })
+          );
+          
+          const tier = Math.floor(i / (CONFIG.ORNAMENT_COUNT / 3));
+          const angle = (i * 137.5) * Math.PI / 180;
+          const radius = 0.35 + Math.random() * 0.45 - tier * 0.12;
+          const height = 1.3 + tier * 0.9 + Math.random() * 0.4;
+          
+          ornament.position.set(
+            Math.cos(angle) * radius,
+            height,
+            Math.sin(angle) * radius
+          );
+          
+          ornament.castShadow = true;
+          treeGroup.add(ornament);
+          ornaments.push(ornament);
+        }
+        
+        // Internal glow
+        const pointLight = new THREE.PointLight(0xffaa00, 2.5, 8);
+        pointLight.position.set(0, 2.2, 0);
+        treeGroup.add(pointLight);
+        
+        // Spotlight on star
+        const starLight = new THREE.PointLight(0xffd700, 1.5, 4);
+        starLight.position.copy(star.position);
+        treeGroup.add(starLight);
+        
+        scene.add(treeGroup);
+        
+        // ============================================
+        // GROUND
+        // ============================================
+        const ground = new THREE.Mesh(
+          new THREE.CircleGeometry(15, 32),
+          new THREE.MeshPhongMaterial({ 
+            color: 0x1a3a4a,
+            shininess: 5
+          })
+        );
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // ============================================
+        // SNOW PARTICLES
+        // ============================================
+        const snowGeo = new THREE.BufferGeometry();
+        const snowPos = new Float32Array(CONFIG.SNOW_PARTICLES * 3);
+        const snowVel = [];
+        
+        for (let i = 0; i < CONFIG.SNOW_PARTICLES; i++) {
+          snowPos[i * 3] = (Math.random() - 0.5) * 15;
+          snowPos[i * 3 + 1] = Math.random() * 12;
+          snowPos[i * 3 + 2] = (Math.random() - 0.5) * 15;
+          snowVel.push(0.015 + Math.random() * 0.025);
+        }
+        
+        snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+        
+        const snowMat = new THREE.PointsMaterial({
+          color: 0xffffff,
+          size: 0.1,
+          transparent: true,
+          opacity: 0.9,
+          sizeAttenuation: true
+        });
+        
+        const snowSystem = new THREE.Points(snowGeo, snowMat);
+        scene.add(snowSystem);
+        
+        // Enable shadows
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        directionalLight.castShadow = true;
+        
+        // ============================================
+        // ANIMATION LOOP
+        // ============================================
+        function animate() {
+          animationFrameRef.current = requestAnimationFrame(animate);
+          
+          // FPS
+          frameCount.current++;
+          const now = performance.now();
+          if (now - lastFrameTime.current > 1000) {
+            setFPS(frameCount.current);
+            frameCount.current = 0;
+            lastFrameTime.current = now;
           }
           
-          const width = window.innerWidth;
-          const height = window.innerHeight;
-          
-          debugLog.add(`📐 Canvas size: ${width}x${height}`);
-          
-          // Scene
-          const scene = new THREE.Scene();
-          scene.background = null; // Transparent
-          
-          // Camera
-          const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
-          camera.position.set(0, 2, isMobile ? 6 : 5);
-          camera.lookAt(0, 1.5, 0);
-          
-          // Renderer
-          const renderer = new THREE.WebGLRenderer({
-            canvas: canvas,
-            alpha: true,
-            antialias: CONFIG.ENABLE_ANTIALIASING
-          });
-          
-          renderer.setSize(width, height);
-          renderer.setPixelRatio(CONFIG.PIXEL_RATIO);
-          renderer.setClearColor(0x000000, 0);
-          
-          debugLog.add('🖥️ Renderer created');
-          
-          // Test WebGL
-          const gl = renderer.getContext();
-          debugLog.add(`WebGL: ${gl.VERSION}`);
-          
-          // Lights
-          const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-          scene.add(ambientLight);
-          
-          const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
-          directionalLight.position.set(5, 10, 5);
-          scene.add(directionalLight);
-          
-          debugLog.add('💡 Lights added');
-          
-          // ============================================
-          // CHRISTMAS TREE
-          // ============================================
-          const treeGroup = new THREE.Group();
-          
-          // Trunk
-          const trunkGeo = new THREE.CylinderGeometry(0.2, 0.25, 1, 8);
-          const trunkMat = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
-          const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-          trunk.position.y = 0.5;
-          treeGroup.add(trunk);
-          
-          // Foliage
-          const foliageMat = new THREE.MeshPhongMaterial({ color: 0x0F5E32 });
-          
-          const tier1 = new THREE.Mesh(new THREE.ConeGeometry(1.2, 1.5, 8), foliageMat);
-          tier1.position.y = 1.5;
-          treeGroup.add(tier1);
-          
-          const tier2 = new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.2, 8), foliageMat);
-          tier2.position.y = 2.3;
-          treeGroup.add(tier2);
-          
-          const tier3 = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1, 8), foliageMat);
-          tier3.position.y = 3;
-          treeGroup.add(tier3);
-          
-          // Star
-          const starGeo = new THREE.IcosahedronGeometry(0.25, 0);
-          const starMat = new THREE.MeshBasicMaterial({ 
-            color: 0xFFD700,
-            emissive: 0xFFD700
-          });
-          const star = new THREE.Mesh(starGeo, starMat);
-          star.position.y = 3.9;
-          treeGroup.add(star);
-          
-          debugLog.add('🎄 Christmas tree created');
-          
-          // Ornaments
-          const ornamentColors = [0xFF0000, 0x0000FF, 0xFFD700, 0xFF1493, 0x00FF00];
-          for (let i = 0; i < CONFIG.ORNAMENT_COUNT; i++) {
-            const ornament = new THREE.Mesh(
-              new THREE.SphereGeometry(0.08, 8, 8),
-              new THREE.MeshStandardMaterial({
-                color: ornamentColors[i % ornamentColors.length],
-                metalness: 0.7,
-                roughness: 0.3
-              })
-            );
-            
-            const angle = (i * 137.5) * Math.PI / 180;
-            const radius = 0.4 + Math.random() * 0.4;
-            const height = 1.2 + Math.random() * 2;
-            
-            ornament.position.set(
-              Math.cos(angle) * radius,
-              height,
-              Math.sin(angle) * radius
-            );
-            
-            treeGroup.add(ornament);
+          // Auto rotate when not dragging
+          if (!isDragging.current && controlMode === 'auto') {
+            targetRotation.current += CONFIG.AUTO_ROTATE_SPEED;
           }
           
-          // Point light
-          const pointLight = new THREE.PointLight(0xFFAA00, 2, 8);
-          pointLight.position.set(0, 2, 0);
-          treeGroup.add(pointLight);
+          // Smooth rotation
+          treeGroup.rotation.y += (targetRotation.current - treeGroup.rotation.y) * CONFIG.DAMPING;
           
-          scene.add(treeGroup);
+          // Smooth scale
+          const currentScale = treeGroup.scale.x;
+          const newScale = currentScale + (targetScale.current - currentScale) * CONFIG.DAMPING;
+          treeGroup.scale.set(newScale, newScale, newScale);
           
-          debugLog.add('✨ Ornaments added');
+          // Rotate star
+          star.rotation.y += 0.025;
+          star.rotation.z = Math.sin(now * 0.001) * 0.15;
           
-          // ============================================
-          // SNOW PARTICLES
-          // ============================================
-          const snowGeo = new THREE.BufferGeometry();
-          const snowPos = new Float32Array(CONFIG.SNOW_PARTICLES * 3);
-          const snowVel = [];
+          // Pulsating star light
+          starLight.intensity = 1.5 + Math.sin(now * 0.003) * 0.5;
           
+          // Ornament sparkle
+          ornaments.forEach((ornament, i) => {
+            const sparkle = Math.sin(now * 0.002 + i * 0.5) * 0.5 + 0.5;
+            ornament.material.emissiveIntensity = 0.2 + sparkle * 0.4;
+          });
+          
+          // Snow falling
+          const positions = snowGeo.attributes.position.array;
           for (let i = 0; i < CONFIG.SNOW_PARTICLES; i++) {
-            snowPos[i * 3] = (Math.random() - 0.5) * 12;
-            snowPos[i * 3 + 1] = Math.random() * 10;
-            snowPos[i * 3 + 2] = (Math.random() - 0.5) * 12;
-            snowVel.push(0.01 + Math.random() * 0.02);
+            positions[i * 3 + 1] -= snowVel[i];
+            
+            if (positions[i * 3 + 1] < 0) {
+              positions[i * 3 + 1] = 12;
+              positions[i * 3] = (Math.random() - 0.5) * 15;
+              positions[i * 3 + 2] = (Math.random() - 0.5) * 15;
+            }
           }
+          snowGeo.attributes.position.needsUpdate = true;
           
-          snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
-          
-          const snowMat = new THREE.PointsMaterial({
-            color: 0xFFFFFF,
-            size: 0.08,
-            transparent: true,
-            opacity: 0.8
-          });
-          
-          const snowSystem = new THREE.Points(snowGeo, snowMat);
-          scene.add(snowSystem);
-          
-          debugLog.add('❄️ Snow system created');
-          
-          // ============================================
-          // ANIMATION LOOP
-          // ============================================
-          function animate() {
-            animationFrameRef.current = requestAnimationFrame(animate);
-            
-            // FPS counter
-            frameCount.current++;
-            const now = performance.now();
-            if (now - lastFrameTime.current > 1000) {
-              setFPS(frameCount.current);
-              frameCount.current = 0;
-              lastFrameTime.current = now;
-            }
-            
-            // Magic spin
-            if (isSpinning.current) {
-              const elapsed = (now - spinStartTime.current) / 1000;
-              if (elapsed < 2) {
-                targetRotation.current += 0.15;
-              } else {
-                isSpinning.current = false;
-              }
-            }
-            
-            // Smooth transforms
-            treeGroup.rotation.y += (targetRotation.current - treeGroup.rotation.y) * CONFIG.DAMPING;
-            const newScale = treeGroup.scale.x + (targetScale.current - treeGroup.scale.x) * CONFIG.DAMPING;
-            treeGroup.scale.set(newScale, newScale, newScale);
-            
-            // Rotate star
-            star.rotation.y += 0.02;
-            star.rotation.z += 0.01;
-            
-            // Snow falling
-            const positions = snowGeo.attributes.position.array;
-            for (let i = 0; i < CONFIG.SNOW_PARTICLES; i++) {
-              positions[i * 3 + 1] -= snowVel[i];
-              if (positions[i * 3 + 1] < -1) {
-                positions[i * 3 + 1] = 10;
-              }
-            }
-            snowGeo.attributes.position.needsUpdate = true;
-            
-            renderer.render(scene, camera);
-          }
-          
-          animate();
-          debugLog.add('🎬 Animation started');
-          
-          sceneRef.current = { scene, camera, renderer, treeGroup };
-          
-          // Resize handler
-          const handleResize = () => {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-            renderer.setSize(w, h);
-          };
-          
-          window.addEventListener('resize', handleResize);
-          
-          return () => {
-            window.removeEventListener('resize', handleResize);
-            if (animationFrameRef.current) {
-              cancelAnimationFrame(animationFrameRef.current);
-            }
-          };
-          
-        } catch (err) {
-          debugLog.add(`❌ Three.js error: ${err.message}`);
-          console.error('Three.js initialization error:', err);
-          setErrorMessage('Lỗi khởi tạo đồ họa 3D');
-          setAppState('ERROR');
-        }
-      };
-      
-      // ============================================
-      // MEDIAPIPE
-      // ============================================
-      const initMediaPipe = async () => {
-        debugLog.add('🤖 Initializing MediaPipe...');
-        
-        try {
-          const hands = new Hands({
-            locateFile: (file) => {
-              return `https://unpkg.com/@mediapipe/hands@0.4.1646424915/${file}`;
-            }
-          });
-          
-          hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: isMobile ? 0 : 1,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
-          });
-          
-          hands.onResults(onHandResults);
-          await hands.initialize();
-          
-          debugLog.add('✅ MediaPipe ready');
-          
-          handsRef.current = hands;
-          
-          // Detection loop
-          let isProcessing = false;
-          async function detect() {
-            if (videoRef.current && handsRef.current && !isProcessing) {
-              isProcessing = true;
-              try {
-                await handsRef.current.send({ image: videoRef.current });
-              } catch (err) {
-                console.warn('Detection error:', err);
-              } finally {
-                isProcessing = false;
-              }
-            }
-            setTimeout(detect, 1000 / CONFIG.AI_FPS);
-          }
-          
-          detect();
-          return true;
-          
-        } catch (err) {
-          debugLog.add(`❌ MediaPipe error: ${err.message}`);
-          console.error('MediaPipe error:', err);
-          return false; // Don't fail, continue without hand tracking
-        }
-      };
-      
-      // ============================================
-      // GESTURE PROCESSING
-      // ============================================
-      function onHandResults(results) {
-        if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-          setGesture('idle');
-          const timeSince = Date.now() - lastHandSeen.current;
-          if (timeSince > 300) {
-            targetRotation.current *= 0.95;
-          }
-          return;
+          renderer.render(scene, camera);
         }
         
-        lastHandSeen.current = Date.now();
-        const landmarks = results.multiHandLandmarks[0];
+        animate();
         
-        const wrist = landmarks[0];
-        const thumbTip = landmarks[4];
-        const indexTip = landmarks[8];
-        const middleTip = landmarks[12];
-        
-        const dist = (p1, p2) => {
-          const dx = p1.x - p2.x;
-          const dy = p1.y - p2.y;
-          const dz = (p1.z || 0) - (p2.z || 0);
-          return Math.sqrt(dx*dx + dy*dy + dz*dz);
+        sceneRef.current = { 
+          scene, 
+          camera, 
+          renderer, 
+          treeGroup,
+          star 
         };
         
-        const thumbDist = dist(thumbTip, wrist);
-        const indexDist = dist(indexTip, wrist);
-        const middleDist = dist(middleTip, wrist);
-        const pinchDist = dist(thumbTip, indexTip);
+        // Resize
+        const handleResize = () => {
+          const w = window.innerWidth;
+          const h = window.innerHeight;
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+        };
         
-        // Fist
-        if (thumbDist < 0.15 && indexDist < 0.18 && middleDist < 0.18) {
-          if (!isSpinning.current) {
-            setGesture('magic_spin');
-            isSpinning.current = true;
-            spinStartTime.current = performance.now();
-            targetRotation.current += Math.PI * 2;
+        window.addEventListener('resize', handleResize);
+        
+        return () => {
+          window.removeEventListener('resize', handleResize);
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
           }
-          return;
-        }
+        };
+      };
+      
+      // ============================================
+      // MOUSE/TOUCH CONTROLS
+      // ============================================
+      const handlePointerDown = (e) => {
+        isDragging.current = true;
+        lastMouseX.current = e.clientX || e.touches?.[0]?.clientX || 0;
+        setControlMode('mouse');
+      };
+      
+      const handlePointerMove = (e) => {
+        if (!isDragging.current) return;
         
-        // Pinch
-        if (pinchDist < 0.12) {
-          setGesture('scaling');
-          targetScale.current = Math.max(0.5, Math.min(2.0, pinchDist * 8));
-          return;
-        }
+        const currentX = e.clientX || e.touches?.[0]?.clientX || 0;
+        const deltaX = currentX - lastMouseX.current;
         
-        // Rotation
-        const handX = wrist.x;
-        const centered = (handX - 0.5) * 2;
-        
-        if (Math.abs(centered) < 0.2) {
-          setGesture('idle');
-          targetRotation.current *= 0.9;
-        } else {
-          setGesture(centered < 0 ? 'rotate_left' : 'rotate_right');
-          targetRotation.current += centered * CONFIG.ROTATION_SPEED;
+        targetRotation.current += deltaX * 0.01;
+        lastMouseX.current = currentX;
+      };
+      
+      const handlePointerUp = () => {
+        isDragging.current = false;
+      };
+      
+      const handleWheel = (e) => {
+        e.preventDefault();
+        const delta = e.deltaY * -0.001;
+        targetScale.current = Math.max(0.5, Math.min(2.5, targetScale.current + delta));
+      };
+      
+      // Double click to spin
+      const handleDoubleClick = () => {
+        if (!isSpinning.current) {
+          isSpinning.current = true;
+          const spinDuration = 2000;
+          const startRot = targetRotation.current;
+          const startTime = performance.now();
+          
+          const spin = () => {
+            const elapsed = performance.now() - startTime;
+            if (elapsed < spinDuration) {
+              const progress = elapsed / spinDuration;
+              targetRotation.current = startRot + (Math.PI * 2) * progress;
+              requestAnimationFrame(spin);
+            } else {
+              isSpinning.current = false;
+            }
+          };
+          
+          spin();
         }
-      }
+      };
       
       // ============================================
       // INITIALIZATION
       // ============================================
       useEffect(() => {
-        let mounted = true;
+        setAppState('LOADING');
         
-        const init = async () => {
-          if (!mounted) return;
-          
-          debugLog.add('🚀 Starting initialization...');
-          setAppState('LOADING');
-          
-          const cameraOK = await initCamera();
-          if (!cameraOK || !mounted) return;
-          
-          await new Promise(r => setTimeout(r, 500));
-          
+        setTimeout(() => {
           initThreeJS();
-          
-          await initMediaPipe();
-          
-          if (mounted) {
-            debugLog.add('✅ All systems ready!');
-            setAppState('READY');
-            setTimeout(() => setShowInstructions(false), 7000);
-          }
-        };
-        
-        init();
+          setAppState('READY');
+          setTimeout(() => setShowInstructions(false), 8000);
+        }, 1000);
         
         return () => {
-          mounted = false;
-          if (videoRef.current && videoRef.current.srcObject) {
-            videoRef.current.srcObject.getTracks().forEach(t => t.stop());
-          }
           if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
           }
@@ -595,137 +418,110 @@
       }, []);
       
       // ============================================
-      // UI
+      // UI RENDERING
       // ============================================
-      const gestureText = {
-        idle: '✋ Di chuyển tay để bắt đầu',
-        rotate_left: '↶ Xoay trái',
-        rotate_right: '↷ Xoay phải',
-        scaling: '🔍 Zoom',
-        magic_spin: '✨ Ma thuật 360°!'
-      };
       
-      // INIT SCREEN
-      if (appState === 'INIT') {
+      if (appState === 'INIT' || appState === 'LOADING') {
         return h('div', {
-          className: 'w-screen h-screen bg-gradient-to-br from-green-700 via-red-600 to-green-800 flex items-center justify-center'
-        },
-          h('div', { className: 'text-center px-6' },
-            h('div', { className: 'text-8xl mb-6 float-animation' }, '🎄'),
-            h('h1', { className: 'text-white text-4xl font-bold mb-4' }, 'AR Cây Thông Noel'),
-            h('p', { className: 'text-white/90 text-lg mb-8' }, 'Trải nghiệm AR điều khiển bằng tay'),
-            h('button', {
-              className: 'bg-white text-green-700 px-8 py-4 rounded-full text-xl font-bold shadow-2xl active:scale-95 transition-transform',
-              onClick: () => setAppState('LOADING')
-            }, '🎅 BẮT ĐẦU')
-          )
-        );
-      }
-      
-      // LOADING
-      if (appState === 'LOADING') {
-        return h('div', {
-          className: 'w-screen h-screen bg-gradient-to-b from-red-600 to-green-700 flex items-center justify-center'
+          className: 'w-screen h-screen bg-gradient-to-b from-blue-900 via-purple-900 to-green-900 flex items-center justify-center'
         },
           h('div', { className: 'text-center' },
-            h('div', { className: 'text-7xl mb-6 float-animation' }, '🎄'),
-            h('p', { className: 'text-white text-2xl font-bold mb-2' }, 'Đang khởi động...'),
-            h('p', { className: 'text-white/70 text-sm mb-4' }, 'Vui lòng cho phép camera'),
-            h('div', { className: 'mt-6' },
+            h('div', { className: 'text-8xl mb-6 float-animation' }, '🎄'),
+            h('h1', { className: 'text-white text-5xl font-bold mb-3' }, 'AR Cây Thông Noel'),
+            h('p', { className: 'text-white/80 text-lg' }, 'Đang khởi động...'),
+            h('div', { className: 'mt-8' },
               h('div', { 
                 className: 'w-16 h-16 border-4 border-white/30 border-t-white rounded-full mx-auto',
                 style: { animation: 'spin 1s linear infinite' }
               })
-            ),
-            CONFIG.DEBUG_MODE && h('div', { className: 'debug-panel' },
-              debugLogs.map((log, i) => h('div', { key: i }, log))
             )
           )
         );
       }
       
-      // ERROR
-      if (appState === 'ERROR') {
-        return h('div', {
-          className: 'w-screen h-screen bg-red-600 flex items-center justify-center'
-        },
-          h('div', { className: 'text-center px-6 max-w-md' },
-            h('div', { className: 'text-7xl mb-6' }, '⚠️'),
-            h('h2', { className: 'text-white text-2xl font-bold mb-4' }, 'Có lỗi xảy ra'),
-            h('p', { className: 'text-white/90 mb-6' }, errorMessage),
-            h('button', {
-              className: 'bg-white text-red-600 px-6 py-3 rounded-full font-bold',
-              onClick: () => window.location.reload()
-            }, '🔄 Thử lại'),
-            CONFIG.DEBUG_MODE && h('div', { className: 'debug-panel' },
-              debugLogs.map((log, i) => h('div', { key: i }, log))
-            )
-          )
-        );
-      }
-      
-      // MAIN APP
-      return h('div', { className: 'relative w-screen h-screen overflow-hidden' },
-        // Video
-        h('video', {
-          ref: videoRef,
-          className: 'absolute inset-0 w-full h-full object-cover',
-          style: { transform: 'scaleX(-1)' },
-          playsInline: true,
-          muted: true,
-          autoPlay: true
-        }),
-        
-        // Canvas
+      return h('div', { 
+        className: 'relative w-screen h-screen overflow-hidden',
+        onMouseDown: handlePointerDown,
+        onMouseMove: handlePointerMove,
+        onMouseUp: handlePointerUp,
+        onMouseLeave: handlePointerUp,
+        onTouchStart: handlePointerDown,
+        onTouchMove: handlePointerMove,
+        onTouchEnd: handlePointerUp,
+        onWheel: handleWheel,
+        onDoubleClick: handleDoubleClick
+      },
         h('canvas', {
           ref: canvasRef,
-          className: 'absolute inset-0 w-full h-full'
+          className: 'absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing'
         }),
         
         // HUD
-        h('div', { className: 'absolute inset-0 pointer-events-none' },
-          h('div', { className: 'absolute top-4 left-4 right-4 flex justify-between z-10' },
+        h('div', { className: 'absolute inset-0 pointer-events-none select-none' },
+          // Top bar
+          h('div', { className: 'absolute top-4 left-4 right-4 flex justify-between items-start z-10' },
             h('div', { 
-              className: 'bg-black/70 backdrop-blur text-white px-4 py-2 rounded-full text-sm shadow-xl' 
-            }, gestureText[gesture]),
+              className: 'bg-black/70 backdrop-blur text-white px-5 py-2 rounded-full text-sm font-medium shadow-2xl border border-white/20' 
+            }, 
+              controlMode === 'auto' ? '🔄 Tự động xoay' : '🖱️ Kéo để xoay'
+            ),
             
             h('div', { className: 'flex gap-2' },
-              h('div', { className: 'bg-black/70 text-white px-3 py-1 rounded-full text-xs' }, `${fps} FPS`),
+              h('div', { 
+                className: 'bg-black/70 backdrop-blur text-white px-3 py-1 rounded-full text-xs border border-white/20' 
+              }, `${fps} FPS`),
+              
               h('button', {
-                className: 'bg-red-500 text-white px-4 py-1 rounded-full text-xs font-bold pointer-events-auto',
+                className: 'bg-green-500/90 backdrop-blur text-white px-4 py-1 rounded-full text-xs font-bold pointer-events-auto active:scale-95 transition shadow-xl border border-white/30',
+                onClick: () => setControlMode(controlMode === 'auto' ? 'mouse' : 'auto')
+              }, controlMode === 'auto' ? '⏸️ Dừng' : '▶️ Tự động'),
+              
+              h('button', {
+                className: 'bg-red-500/90 backdrop-blur text-white px-4 py-1 rounded-full text-xs font-bold pointer-events-auto active:scale-95 transition shadow-xl',
                 onClick: () => window.location.reload()
               }, '🔄')
             )
           ),
           
+          // Instructions
           showInstructions && h('div', {
-            className: 'absolute bottom-24 left-0 right-0 text-center'
+            className: 'absolute bottom-20 left-0 right-0 text-center transition-opacity duration-1000'
           },
-            h('div', { className: 'bg-gradient-to-t from-black/90 to-transparent pt-12 pb-8 px-6' },
-              h('h3', { className: 'text-white text-xl font-bold mb-4' }, '🎄 Hướng dẫn'),
-              h('div', { className: 'space-y-2' },
-                h('p', { className: 'text-white text-sm' }, '✋ Di chuyển tay trái/phải → Xoay cây'),
-                h('p', { className: 'text-white text-sm' }, '🤏 Véo ngón cái + trỏ → Zoom'),
-                h('p', { className: 'text-white text-sm' }, '✊ Nắm đấm → Xoay 360°')
+            h('div', { 
+              className: 'bg-gradient-to-t from-black/90 via-black/80 to-transparent pt-16 pb-10 px-6' 
+            },
+              h('h3', { 
+                className: 'text-white text-2xl font-bold mb-6',
+                style: { textShadow: '0 4px 20px rgba(0,0,0,0.9)' }
+              }, '🎄 Hướng dẫn sử dụng'),
+              
+              h('div', { className: 'space-y-3 max-w-md mx-auto' },
+                h('div', { className: 'bg-white/10 backdrop-blur rounded-xl p-3 border border-white/20' },
+                  h('p', { className: 'text-white font-semibold' }, '🖱️ Kéo chuột để xoay cây')
+                ),
+                h('div', { className: 'bg-white/10 backdrop-blur rounded-xl p-3 border border-white/20' },
+                  h('p', { className: 'text-white font-semibold' }, '🔍 Lăn chuột để zoom in/out')
+                ),
+                h('div', { className: 'bg-white/10 backdrop-blur rounded-xl p-3 border border-white/20' },
+                  h('p', { className: 'text-white font-semibold' }, '👆 Double-click để xoay 360°')
+                )
               ),
+              
               h('button', {
-                className: 'mt-4 text-white/60 text-xs underline pointer-events-auto',
+                className: 'mt-6 bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-full text-sm font-bold pointer-events-auto transition backdrop-blur border border-white/30',
                 onClick: () => setShowInstructions(false)
-              }, 'Ẩn hướng dẫn')
+              }, '✓ Đã hiểu')
             )
           ),
           
-          h('div', { className: 'absolute bottom-6 left-0 right-0 text-center' },
+          // Branding
+          h('div', { className: 'absolute bottom-6 left-0 right-0 text-center z-10' },
             h('a', {
-              href: '#',
-              className: 'text-white/80 text-sm italic pointer-events-auto',
-              style: { textShadow: '0 2px 12px rgba(0,0,0,0.9)' }
+              href: 'https://github.com/vukimvung',
+              target: '_blank',
+              className: 'text-white/90 text-base font-serif italic pointer-events-auto hover:text-white transition-colors drop-shadow-lg',
+              style: { textShadow: '0 2px 20px rgba(0,0,0,0.9)' }
             }, '✨ Created by Vũ Kim Vững')
-          ),
-          
-          CONFIG.DEBUG_MODE && h('div', { className: 'debug-panel' },
-            h('div', { className: 'font-bold mb-2' }, '🔍 Debug Console'),
-            debugLogs.map((log, i) => h('div', { key: i, className: 'text-[9px]' }, log))
           )
         )
       );
