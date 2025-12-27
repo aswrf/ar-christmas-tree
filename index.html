@@ -60,7 +60,7 @@
       left: 20px;
       font-weight: 600;
       font-size: 15px;
-      max-width: 340px;
+      max-width: 280px;
     }
     
     .top-right {
@@ -69,6 +69,14 @@
       display: flex;
       gap: 10px;
       align-items: center;
+    }
+    
+    /* MOVED TO BOTTOM RIGHT */
+    .bottom-right {
+      bottom: 24px;
+      right: 24px;
+      max-width: 340px;
+      font-size: 12px;
     }
     
     .bottom {
@@ -173,28 +181,14 @@
       font-size: 80px;
     }
     
-    .orbit-indicator {
-      position: fixed;
-      top: 90px;
-      left: 20px;
-      background: rgba(0, 100, 255, 0.2);
-      border: 1px solid rgba(0, 150, 255, 0.5);
-      color: #0af;
-      padding: 10px 18px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-family: monospace;
-      z-index: 10;
-    }
-    
     .rotation-trail {
       position: fixed;
       top: 50%;
       left: 50%;
-      width: 100px;
-      height: 100px;
-      margin: -50px 0 0 -50px;
-      border: 2px dashed rgba(255, 255, 255, 0.3);
+      width: 120px;
+      height: 120px;
+      margin: -60px 0 0 -60px;
+      border: 3px dashed rgba(0, 200, 255, 0.4);
       border-radius: 50%;
       pointer-events: none;
       opacity: 0;
@@ -203,6 +197,12 @@
     
     .rotation-trail.active {
       opacity: 1;
+      animation: rotateTrail 3s linear infinite;
+    }
+    
+    @keyframes rotateTrail {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -223,16 +223,9 @@
   <!-- Rotation Trail Indicator -->
   <div class="rotation-trail" id="rotationTrail"></div>
   
-  <!-- Orbit Indicator -->
-  <div class="orbit-indicator" id="orbitIndicator">
-    <div>🌐 ORBITAL CAMERA</div>
-    <div style="font-size: 10px; margin-top: 4px; opacity: 0.9;" id="orbitDetails">Azimuth: 0° | Elevation: 45°</div>
-  </div>
-  
   <!-- UI -->
   <div class="ui top-left" id="status">
     <div><span class="gesture-icon">✋</span> <span id="gesture-text">Đang khởi động...</span></div>
-    <div style="font-size: 11px; margin-top: 6px; opacity: 0.9;" id="details"></div>
   </div>
   
   <div class="ui top-right">
@@ -240,6 +233,16 @@
     <div id="aiFps" style="font-size: 11px; opacity: 0.8;">AI: 0</div>
     <button onclick="resetCamera()">🎯 Reset</button>
     <button onclick="location.reload()">🔄</button>
+  </div>
+  
+  <!-- MOVED TO BOTTOM RIGHT -->
+  <div class="ui bottom-right" id="trackingInfo">
+    <div style="font-weight: 600; margin-bottom: 6px;">📊 Tracking Info</div>
+    <div style="font-size: 11px; opacity: 0.9; line-height: 1.6;" id="details">
+      Azimuth: 0°<br>
+      Elevation: 45°<br>
+      Distance: 7.0m
+    </div>
   </div>
   
   <div class="ui bottom">
@@ -269,28 +272,26 @@
   
   <script>
     // ============================================
-    // DOUBLE EXPONENTIAL SMOOTHING
+    // SIMPLE SMOOTHING (NO PREDICTION)
     // ============================================
-    class DoubleExponentialSmoothing {
-      constructor(alpha = 0.4, beta = 0.3) {
-        this.alpha = alpha;
-        this.beta = beta;
-        this.level = null;
-        this.trend = null;
+    class SimpleSmoothing {
+      constructor(bufferSize = 3) {
+        this.buffer = [];
+        this.bufferSize = bufferSize;
       }
       
-      predict(value, steps = 2) {
-        if (this.level === null) {
-          this.level = value;
-          this.trend = 0;
-          return value;
+      add(value) {
+        this.buffer.push(value);
+        if (this.buffer.length > this.bufferSize) {
+          this.buffer.shift();
         }
         
-        const lastLevel = this.level;
-        this.level = this.alpha * value + (1 - this.alpha) * (this.level + this.trend);
-        this.trend = this.beta * (this.level - lastLevel) + (1 - this.beta) * this.trend;
-        
-        return this.level + steps * this.trend;
+        // Simple average
+        return this.buffer.reduce((a, b) => a + b) / this.buffer.length;
+      }
+      
+      reset() {
+        this.buffer = [];
       }
     }
     
@@ -300,8 +301,7 @@
     class CircularMotionDetector {
       constructor() {
         this.positions = [];
-        this.maxHistory = 15;
-        this.rotationDetected = false;
+        this.maxHistory = 12;
       }
       
       addPosition(x, y) {
@@ -314,7 +314,7 @@
       detectCircularMotion() {
         if (this.positions.length < 8) return { detected: false, direction: 0, speed: 0 };
         
-        // Calculate center of motion
+        // Calculate center
         let centerX = 0, centerY = 0;
         for (let p of this.positions) {
           centerX += p.x;
@@ -323,7 +323,7 @@
         centerX /= this.positions.length;
         centerY /= this.positions.length;
         
-        // Calculate angles relative to center
+        // Calculate angles
         const angles = [];
         for (let p of this.positions) {
           const dx = p.x - centerX;
@@ -332,22 +332,21 @@
           angles.push(angle);
         }
         
-        // Check if angles are progressing (circular motion)
+        // Check progression
         let totalAngleChange = 0;
         for (let i = 1; i < angles.length; i++) {
           let diff = angles[i] - angles[i-1];
           
-          // Normalize to -PI to PI
+          // Normalize
           while (diff > Math.PI) diff -= 2 * Math.PI;
           while (diff < -Math.PI) diff += 2 * Math.PI;
           
           totalAngleChange += diff;
         }
         
-        const avgAngleChange = totalAngleChange / (angles.length - 1);
         const isCircular = Math.abs(totalAngleChange) > Math.PI / 2;
         
-        // Calculate radius variance (circular should have consistent radius)
+        // Check radius consistency
         const radii = this.positions.map(p => {
           const dx = p.x - centerX;
           const dy = p.y - centerY;
@@ -357,20 +356,17 @@
         const avgRadius = radii.reduce((a,b) => a+b) / radii.length;
         const radiusVariance = radii.reduce((sum, r) => sum + Math.pow(r - avgRadius, 2), 0) / radii.length;
         
-        const isConsistentRadius = radiusVariance < 0.01;
+        const isConsistentRadius = radiusVariance < 0.015;
         
-        const detected = isCircular && isConsistentRadius;
+        const detected = isCircular && isConsistentRadius && avgRadius > 0.05;
         const direction = totalAngleChange > 0 ? 1 : -1;
-        const speed = Math.abs(avgAngleChange) * 10;
-        
-        this.rotationDetected = detected;
+        const speed = Math.abs(totalAngleChange) / (angles.length - 1);
         
         return { detected, direction, speed };
       }
       
       reset() {
         this.positions = [];
-        this.rotationDetected = false;
       }
     }
     
@@ -380,15 +376,15 @@
     let scene, camera, renderer, tree;
     
     // ORBITAL CAMERA PARAMETERS
-    let targetAzimuth = 0;      // Horizontal angle (0-360°)
-    let targetElevation = 45;   // Vertical angle (5-85°)
-    let targetDistance = 7;     // Distance from target
+    let targetAzimuth = 0;
+    let targetElevation = 45;
+    let targetDistance = 7;
     
     let currentAzimuth = 0;
     let currentElevation = 45;
     let currentDistance = 7;
     
-    const TARGET_POSITION = new THREE.Vector3(0, 2.5, 0); // Look at tree center
+    const TARGET_POSITION = new THREE.Vector3(0, 2.5, 0);
     
     let frameCount = 0;
     let aiFrameCount = 0;
@@ -398,10 +394,10 @@
     let ornaments = [];
     let lights = [];
     
-    // PREDICTIVE TRACKING
-    const desX = new DoubleExponentialSmoothing(0.5, 0.4);
-    const desY = new DoubleExponentialSmoothing(0.5, 0.4);
-    const desPinch = new DoubleExponentialSmoothing(0.6, 0.5);
+    // SIMPLE SMOOTHING (NO PREDICTION)
+    const smoothX = new SimpleSmoothing(4);
+    const smoothY = new SimpleSmoothing(4);
+    const smoothPinch = new SimpleSmoothing(3);
     
     // CIRCULAR MOTION DETECTION
     const circularDetector = new CircularMotionDetector();
@@ -412,7 +408,6 @@
     const detailsEl = document.getElementById('details');
     const fpsEl = document.getElementById('fps');
     const aiFpsEl = document.getElementById('aiFps');
-    const orbitDetailsEl = document.getElementById('orbitDetails');
     const rotationTrailEl = document.getElementById('rotationTrail');
     const loadingEl = document.getElementById('loading');
     
@@ -420,7 +415,6 @@
     // CAMERA POSITION CALCULATION
     // ============================================
     function updateCameraPosition() {
-      // Convert spherical to Cartesian coordinates
       const azimuthRad = currentAzimuth * Math.PI / 180;
       const elevationRad = currentElevation * Math.PI / 180;
       
@@ -432,7 +426,7 @@
       camera.lookAt(TARGET_POSITION);
       
       // Update UI
-      orbitDetailsEl.textContent = `Azimuth: ${Math.round(currentAzimuth)}° | Elevation: ${Math.round(currentElevation)}° | Distance: ${currentDistance.toFixed(1)}m`;
+      detailsEl.innerHTML = `Azimuth: ${Math.round(currentAzimuth)}°<br>Elevation: ${Math.round(currentElevation)}°<br>Distance: ${currentDistance.toFixed(1)}m`;
     }
     
     // ============================================
@@ -443,10 +437,9 @@
       targetElevation = 45;
       targetDistance = 7;
       
-      console.log('🎯 Camera reset to default position');
+      console.log('🎯 Camera reset');
     }
     
-    // Make it globally accessible
     window.resetCamera = resetCamera;
     
     // ============================================
@@ -494,8 +487,8 @@
         hands.setOptions({
           maxNumHands: 1,
           modelComplexity: 1,
-          minDetectionConfidence: 0.8,
-          minTrackingConfidence: 0.8,
+          minDetectionConfidence: 0.7,
+          minTrackingConfidence: 0.7,
           selfieMode: true
         });
         
@@ -536,12 +529,15 @@
     }
     
     // ============================================
-    // HAND RESULTS PROCESSING - ORBITAL CONTROL
+    // HAND RESULTS PROCESSING - DIRECT TRACKING
     // ============================================
     function onHandResults(results) {
       if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
         updateGesture('idle', '✋ Không phát hiện tay');
         circularDetector.reset();
+        smoothX.reset();
+        smoothY.reset();
+        smoothPinch.reset();
         rotationTrailEl.classList.remove('active');
         return;
       }
@@ -564,23 +560,20 @@
       };
       
       const pinchDist = dist(thumbTip, indexTip);
-      const thumbIndexDist = dist(thumbTip, indexTip);
       
-      // PREDICTIVE SMOOTHING
-      const PREDICTION_STEPS = 2;
+      // SIMPLE SMOOTHING (NO PREDICTION)
+      const smoothedX = smoothX.add(wrist.x);
+      const smoothedY = smoothY.add(wrist.y);
+      const smoothedPinch = smoothPinch.add(pinchDist);
       
-      const predictedX = desX.predict(wrist.x, PREDICTION_STEPS);
-      const predictedY = desY.predict(wrist.y, PREDICTION_STEPS);
-      const predictedPinch = desPinch.predict(pinchDist, PREDICTION_STEPS);
-      
-      // Add to circular motion detector
-      circularDetector.addPosition(predictedX, predictedY);
+      // Add to circular detector
+      circularDetector.addPosition(smoothedX, smoothedY);
       
       // ============================================
-      // GESTURE DETECTION PRIORITY
+      // GESTURE DETECTION
       // ============================================
       
-      // 1. OK SIGN (Reset Camera)
+      // 1. OK SIGN (Reset)
       const okSignDist = dist(thumbTip, indexTip);
       const isOkSign = okSignDist < 0.05 && 
                        dist(middleTip, wrist) > 0.15 && 
@@ -589,68 +582,66 @@
       
       if (isOkSign) {
         resetCamera();
-        updateGesture('reset', '👌 Reset camera về vị trí ban đầu');
+        updateGesture('reset', '👌 Reset camera');
         return;
       }
       
       // 2. PINCH (Zoom)
-      if (predictedPinch < 0.12) {
-        const normalizedPinch = Math.max(0.02, Math.min(0.12, predictedPinch));
+      if (smoothedPinch < 0.12) {
+        const normalizedPinch = Math.max(0.02, Math.min(0.12, smoothedPinch));
         targetDistance = 4 + (normalizedPinch / 0.12) * 8;
         
         updateGesture('zoom', `🔍 Zoom: ${targetDistance.toFixed(1)}m`);
         return;
       }
       
-      // 3. CIRCULAR MOTION DETECTION
+      // 3. CIRCULAR MOTION
       const circularMotion = circularDetector.detectCircularMotion();
       
-      if (circularMotion.detected && circularMotion.speed > 0.5) {
+      if (circularMotion.detected && circularMotion.speed > 0.3) {
         rotationTrailEl.classList.add('active');
         
-        // Rotate camera azimuth based on circular direction
-        targetAzimuth += circularMotion.direction * circularMotion.speed * 5;
+        // Rotate azimuth
+        targetAzimuth += circularMotion.direction * circularMotion.speed * 200;
         
-        // Normalize to 0-360
+        // Normalize
         while (targetAzimuth >= 360) targetAzimuth -= 360;
         while (targetAzimuth < 0) targetAzimuth += 360;
         
-        updateGesture('orbital', `🔄 Quay tròn: ${circularMotion.direction > 0 ? 'Clockwise ↻' : 'Counter ↺'}`);
+        updateGesture('orbital', `🔄 Quay tròn: ${circularMotion.direction > 0 ? '↻' : '↺'}`);
         return;
       } else {
         rotationTrailEl.classList.remove('active');
       }
       
-      // 4. LINEAR HAND POSITION (Azimuth + Elevation)
-      const centeredX = (predictedX - 0.5) * 2; // -1 to 1
-      const centeredY = predictedY - 0.5;       // -0.5 to 0.5
+      // 4. LINEAR MOVEMENT
+      const centeredX = (smoothedX - 0.5) * 2;
+      const centeredY = smoothedY - 0.5;
       
-      const DEADZONE_X = 0.12;
-      const DEADZONE_Y = 0.12;
+      const DEADZONE_X = 0.15;
+      const DEADZONE_Y = 0.15;
       
-      const AZIMUTH_SPEED = 3;    // degrees per frame
-      const ELEVATION_SPEED = 2;  // degrees per frame
+      const AZIMUTH_SPEED = 2.5;
+      const ELEVATION_SPEED = 1.5;
       
       let gestureText = '';
       
-      // AZIMUTH (Horizontal rotation)
+      // Azimuth
       if (Math.abs(centeredX) > DEADZONE_X) {
         const speed = AZIMUTH_SPEED * Math.abs(centeredX);
         targetAzimuth += centeredX * speed;
         
-        // Normalize
         while (targetAzimuth >= 360) targetAzimuth -= 360;
         while (targetAzimuth < 0) targetAzimuth += 360;
         
         gestureText = centeredX < 0 ? '← Quay trái' : '→ Quay phải';
       }
       
-      // ELEVATION (Vertical angle)
+      // Elevation
       if (Math.abs(centeredY) > DEADZONE_Y) {
         const speed = ELEVATION_SPEED * Math.abs(centeredY);
-        targetElevation -= centeredY * speed; // Inverted: hand down = look up
+        targetElevation -= centeredY * speed;
         
-        // Clamp to 5-85 degrees
         targetElevation = Math.max(5, Math.min(85, targetElevation));
         
         if (gestureText) {
@@ -672,7 +663,6 @@
     // ============================================
     function updateGesture(type, text) {
       gestureTextEl.textContent = text;
-      detailsEl.textContent = `Mode: ${type.toUpperCase()} | Azimuth: ${Math.round(targetAzimuth)}° | Elevation: ${Math.round(targetElevation)}°`;
     }
     
     // ============================================
@@ -686,7 +676,6 @@
       const aspect = window.innerWidth / window.innerHeight;
       camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
       
-      // Initial camera position
       updateCameraPosition();
       
       renderer = new THREE.WebGLRenderer({ 
@@ -723,7 +712,7 @@
       createTree();
       createSnow();
       createGround();
-      createGrid(); // Helper grid
+      createGrid();
       
       console.log('✅ Scene initialized');
     }
@@ -894,21 +883,20 @@
     }
     
     // ============================================
-    // CREATE GRID (Helper)
+    // CREATE GRID
     // ============================================
     function createGrid() {
       const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
       gridHelper.position.y = 0.01;
       scene.add(gridHelper);
       
-      // Axis helper at tree position
       const axesHelper = new THREE.AxesHelper(3);
       axesHelper.position.copy(TARGET_POSITION);
       scene.add(axesHelper);
     }
     
     // ============================================
-    // ANIMATION - ORBITAL CAMERA UPDATE
+    // ANIMATION
     // ============================================
     function animate() {
       requestAnimationFrame(animate);
@@ -922,8 +910,8 @@
         lastTime = now;
       }
       
-      // SMOOTH ORBITAL INTERPOLATION
-      const ORBIT_SPEED = 0.2;
+      // SMOOTH INTERPOLATION
+      const ORBIT_SPEED = 0.15;
       
       currentAzimuth += (targetAzimuth - currentAzimuth) * ORBIT_SPEED;
       currentElevation += (targetElevation - currentElevation) * ORBIT_SPEED;
@@ -933,7 +921,6 @@
       while (currentAzimuth >= 360) currentAzimuth -= 360;
       while (currentAzimuth < 0) currentAzimuth += 360;
       
-      // Update camera position
       updateCameraPosition();
       
       // Rotate star
@@ -1014,8 +1001,7 @@
       updateGesture('idle', '✋ Di chuyển tay để quay camera 360°');
       animate();
       
-      console.log('🚀 360° ORBITAL CAMERA ACTIVATED');
-      console.log('🌐 Full spherical control | Circular motion detection');
+      console.log('🚀 360° ORBITAL CAMERA - DIRECT TRACKING');
     }
     
     init();
