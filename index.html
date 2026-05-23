@@ -5,284 +5,282 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🌌 Dải Thiên Hà - Hand Control</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-  :root {
-    --cosmic-dark: #030510;
-    --nebula-purple: #6b21f5;
-    --star-blue: #38bdf8;
-    --nova-pink: #f472b6;
-    --glow-cyan: #22d3ee;
-    --text-dim: rgba(148,163,184,0.7);
-  }
+:root {
+  --cosmic-dark: #00020a;
+  --core-white: #fff8f0;
+  --core-pink: #ffb3c6;
+  --arm-red: #e8446a;
+  --arm-pink: #d63a8a;
+  --mid-purple: #8b22d4;
+  --outer-blue: #2255c8;
+  --deep-blue: #0d1b6e;
+  --nebula-cloud: #3a1a7a;
+  --glow-cyan: #22d3ee;
+  --text-dim: rgba(180,190,210,0.7);
+}
 
-  body {
-    background: var(--cosmic-dark);
-    color: #e2e8f0;
-    font-family: 'Rajdhani', sans-serif;
-    overflow: hidden;
-    height: 100dvh;
-    width: 100vw;
-  }
+body {
+  background: var(--cosmic-dark);
+  color: #e2e8f0;
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden;
+  height: 100dvh;
+  width: 100vw;
+}
 
-  #galaxy-canvas {
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-  }
+#galaxy-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
 
-  #cam-video {
-    position: fixed;
-    bottom: 16px;
-    left: 16px;
-    width: 200px;
-    height: 130px;
-    border-radius: 12px;
-    border: 1px solid rgba(56,189,248,0.3);
-    object-fit: cover;
-    transform: scaleX(-1);
-    z-index: 10;
-    opacity: 0.85;
-  }
+#cam-video {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  width: 200px;
+  height: 130px;
+  border-radius: 12px;
+  border: 1px solid rgba(56,189,248,0.3);
+  object-fit: cover;
+  transform: scaleX(-1);
+  z-index: 10;
+  opacity: 0.85;
+}
 
-  #hand-canvas {
-    position: fixed;
-    bottom: 16px;
-    left: 16px;
-    width: 200px;
-    height: 130px;
-    border-radius: 12px;
-    z-index: 11;
-    pointer-events: none;
-  }
+#hand-canvas {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  width: 200px;
+  height: 130px;
+  border-radius: 12px;
+  z-index: 11;
+  pointer-events: none;
+}
 
-  /* HUD */
-  #hud {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 20;
-    padding: 16px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    background: linear-gradient(to bottom, rgba(3,5,16,0.9) 0%, transparent 100%);
-  }
+#hud {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 20;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: linear-gradient(to bottom, rgba(0,2,10,0.9) 0%, transparent 100%);
+}
 
-  .hud-title {
-    font-family: 'Orbitron', monospace;
-    font-weight: 900;
-    font-size: clamp(14px, 2.5vw, 22px);
-    background: linear-gradient(135deg, var(--star-blue), var(--nova-pink));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: 2px;
-  }
+.hud-title {
+  font-family: 'Orbitron', monospace;
+  font-weight: 900;
+  font-size: clamp(14px, 2.5vw, 22px);
+  background: linear-gradient(135deg, #ff9de2, #c084fc, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 2px;
+}
 
-  .hud-sub {
-    font-size: 11px;
-    color: var(--text-dim);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-top: 2px;
-  }
+.hud-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
 
-  #stats-panel {
-    background: rgba(3,5,16,0.7);
-    border: 1px solid rgba(56,189,248,0.2);
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 12px;
-    font-family: 'Orbitron', monospace;
-    min-width: 160px;
-    backdrop-filter: blur(8px);
-  }
+#stats-panel {
+  background: rgba(0,2,10,0.7);
+  border: 1px solid rgba(140,80,255,0.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-family: 'Orbitron', monospace;
+  min-width: 160px;
+  backdrop-filter: blur(8px);
+}
 
-  .stat-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
 
-  .stat-label { color: var(--text-dim); }
-  .stat-val { color: var(--glow-cyan); font-weight: 700; }
+.stat-label { color: var(--text-dim); }
+.stat-val { color: #c084fc; font-weight: 700; }
 
-  /* Gesture indicator */
-  #gesture-badge {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 30;
-    font-family: 'Orbitron', monospace;
-    font-size: clamp(14px, 3vw, 20px);
-    font-weight: 700;
-    padding: 10px 24px;
-    border-radius: 30px;
-    background: rgba(107,33,245,0.35);
-    border: 1px solid rgba(107,33,245,0.6);
-    backdrop-filter: blur(12px);
-    color: #e2e8f0;
-    letter-spacing: 2px;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    text-align: center;
-  }
+#gesture-badge {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(14px, 3vw, 20px);
+  font-weight: 700;
+  padding: 10px 24px;
+  border-radius: 30px;
+  background: rgba(80,20,160,0.4);
+  border: 1px solid rgba(160,80,255,0.6);
+  backdrop-filter: blur(12px);
+  color: #e2e8f0;
+  letter-spacing: 2px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  text-align: center;
+}
 
-  #gesture-badge.show { opacity: 1; }
+#gesture-badge.show { opacity: 1; }
 
-  /* Controls guide */
-  #controls-guide {
-    position: fixed;
-    bottom: 16px;
-    right: 16px;
-    z-index: 20;
-    background: rgba(3,5,16,0.75);
-    border: 1px solid rgba(56,189,248,0.15);
-    border-radius: 12px;
-    padding: 12px 16px;
-    font-size: 12px;
-    backdrop-filter: blur(8px);
-    max-width: 220px;
-  }
+#controls-guide {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 20;
+  background: rgba(0,2,10,0.75);
+  border: 1px solid rgba(140,80,255,0.2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 12px;
+  backdrop-filter: blur(8px);
+  max-width: 240px;
+}
 
-  .guide-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 10px;
-    color: var(--glow-cyan);
-    letter-spacing: 2px;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-  }
+.guide-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  color: #c084fc;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
 
-  .guide-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 5px;
-    color: var(--text-dim);
-    font-size: 11px;
-  }
+.guide-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  color: var(--text-dim);
+  font-size: 11px;
+}
 
-  .guide-icon {
-    font-size: 16px;
-    width: 22px;
-    text-align: center;
-    flex-shrink: 0;
-  }
+.guide-icon {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
 
-  /* Loading overlay */
-  #loading {
-    position: fixed;
-    inset: 0;
-    background: var(--cosmic-dark);
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    transition: opacity 0.8s;
-  }
+#loading {
+  position: fixed;
+  inset: 0;
+  background: var(--cosmic-dark);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  transition: opacity 0.8s;
+}
 
-  #loading.hidden { opacity: 0; pointer-events: none; }
+#loading.hidden { opacity: 0; pointer-events: none; }
 
-  .loader-title {
-    font-family: 'Orbitron', monospace;
-    font-size: clamp(18px, 4vw, 32px);
-    font-weight: 900;
-    background: linear-gradient(135deg, var(--star-blue), var(--nova-pink), var(--nebula-purple));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-align: center;
-    letter-spacing: 3px;
-  }
+.loader-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(18px, 4vw, 32px);
+  font-weight: 900;
+  background: linear-gradient(135deg, #ff9de2, #c084fc, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  letter-spacing: 3px;
+}
 
-  .loader-status {
-    font-size: 14px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    text-align: center;
-  }
+.loader-status {
+  font-size: 14px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-align: center;
+}
 
-  .loader-bar-wrap {
-    width: 260px;
-    height: 3px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 3px;
-    overflow: hidden;
-  }
+.loader-bar-wrap {
+  width: 260px;
+  height: 3px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
 
-  .loader-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--star-blue), var(--nova-pink));
-    width: 0%;
-    border-radius: 3px;
-    transition: width 0.4s;
-    animation: barPulse 2s ease-in-out infinite;
-  }
+.loader-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #c084fc, #f472b6);
+  width: 0%;
+  border-radius: 3px;
+  transition: width 0.4s;
+  animation: barPulse 2s ease-in-out infinite;
+}
 
-  @keyframes barPulse {
-    0%,100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
+@keyframes barPulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
 
-  .btn-start {
-    display: none;
-    font-family: 'Orbitron', monospace;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    padding: 14px 36px;
-    border-radius: 50px;
-    border: 1px solid var(--star-blue);
-    background: rgba(56,189,248,0.12);
-    color: var(--star-blue);
-    cursor: pointer;
-    transition: all 0.3s;
-  }
+.btn-start {
+  display: none;
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  padding: 14px 36px;
+  border-radius: 50px;
+  border: 1px solid #c084fc;
+  background: rgba(192,132,252,0.12);
+  color: #c084fc;
+  cursor: pointer;
+  transition: all 0.3s;
+}
 
-  .btn-start:hover {
-    background: rgba(56,189,248,0.25);
-    box-shadow: 0 0 30px rgba(56,189,248,0.4);
-  }
+.btn-start:hover {
+  background: rgba(192,132,252,0.25);
+  box-shadow: 0 0 30px rgba(192,132,252,0.4);
+}
 
-  /* FPS counter */
-  #fps-badge {
-    position: fixed;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 25;
-    font-family: 'Orbitron', monospace;
-    font-size: 11px;
-    color: rgba(56,189,248,0.5);
-    letter-spacing: 2px;
-  }
+#fps-badge {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  color: rgba(192,132,252,0.5);
+  letter-spacing: 2px;
+}
 
-  /* Hand detected glow ring */
-  #hand-glow {
-    position: fixed;
-    pointer-events: none;
-    z-index: 15;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(56,189,248,0.3) 0%, transparent 70%);
-    border: 1px solid rgba(56,189,248,0.4);
-    transform: translate(-50%, -50%);
-    transition: opacity 0.2s;
-    opacity: 0;
-    display: none;
-  }
+#hand-glow {
+  position: fixed;
+  pointer-events: none;
+  z-index: 15;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(192,132,252,0.3) 0%, transparent 70%);
+  border: 1px solid rgba(192,132,252,0.4);
+  transform: translate(-50%, -50%);
+  transition: opacity 0.2s;
+  opacity: 0;
+  display: none;
+}
 </style>
 </head>
 <body>
 
-<!-- Loading -->
 <div id="loading">
   <div class="loader-title">🌌 THIÊN HÀ<br>HAND CONTROL</div>
   <div class="loader-status" id="load-status">Đang tải MediaPipe...</div>
@@ -290,17 +288,11 @@
   <button class="btn-start" id="btn-start" onclick="startExperience()">✨ BẮT ĐẦU</button>
 </div>
 
-<!-- Galaxy canvas -->
 <canvas id="galaxy-canvas"></canvas>
-
-<!-- Camera feed -->
 <video id="cam-video" autoplay muted playsinline></video>
 <canvas id="hand-canvas"></canvas>
-
-<!-- Hand cursor -->
 <div id="hand-glow"></div>
 
-<!-- HUD -->
 <div id="hud">
   <div>
     <div class="hud-title">🌌 GALAXY CONTROL</div>
@@ -311,130 +303,135 @@
     <div class="stat-row"><span class="stat-label">Elevation</span><span class="stat-val" id="s-el">25°</span></div>
     <div class="stat-row"><span class="stat-label">Zoom</span><span class="stat-val" id="s-zoom">1.0x</span></div>
     <div class="stat-row"><span class="stat-label">Gesture</span><span class="stat-val" id="s-gesture">—</span></div>
-    <div class="stat-row"><span class="stat-label">Confidence</span><span class="stat-val" id="s-conf">—</span></div>
+    <div class="stat-row"><span class="stat-label">Hands</span><span class="stat-val" id="s-hands">0</span></div>
   </div>
 </div>
 
-<!-- FPS -->
 <div id="fps-badge">60 FPS</div>
+<div id="gesture-badge"></div>
 
-<!-- Gesture badge -->
-<div id="gesture-badge" id="gesture-badge"></div>
-
-<!-- Controls guide -->
 <div id="controls-guide">
   <div class="guide-title">✦ Controls</div>
-  <div class="guide-row"><span class="guide-icon">↔️</span><span>Tay trái/phải → Xoay ngang</span></div>
-  <div class="guide-row"><span class="guide-icon">↕️</span><span>Tay lên/xuống → Góc nhìn</span></div>
-  <div class="guide-row"><span class="guide-icon">🤏</span><span>Véo ngón → Zoom</span></div>
-  <div class="guide-row"><span class="guide-icon">✊</span><span>Nắm tay → Xoay tự do</span></div>
+  <div class="guide-row"><span class="guide-icon">✊</span><span>Nắm tay → Xoay thiên hà</span></div>
+  <div class="guide-row"><span class="guide-icon">🤏</span><span>Véo ngón → Zoom 1 tay</span></div>
+  <div class="guide-row"><span class="guide-icon">🙌</span><span>2 tay kéo ra → Zoom sâu</span></div>
   <div class="guide-row"><span class="guide-icon">🖐️</span><span>Mở tay → Trôi nổi</span></div>
-  <div class="guide-row"><span class="guide-icon">👌</span><span>OK sign → Reset</span></div>
+  <div class="guide-row"><span class="guide-icon">✌️</span><span>Peace → Turbo orbit</span></div>
+  <div class="guide-row"><span class="guide-icon">👌</span><span>OK → Reset camera</span></div>
 </div>
 
-<!-- Three.js + MediaPipe -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ─── GLOBALS ───────────────────────────────────────────────────────────────
-let camera3D, scene, renderer, galaxyMesh, nebulaParticles, dustCloud;
+let camera3D, scene, renderer, galaxyMesh, nebulaParticles, dustCloud, coreGlow;
 let azimuth = 0, elevation = 25, distance = 6;
 let targetAz = 0, targetEl = 25, targetDist = 6;
 let autoRotate = true;
-let handDetector = null, handResults = null;
+let handDetector = null;
 let lastGesture = null, gestureCooldown = 0;
 let prevHandX = null, prevHandY = null;
-let fpsArr = [], lastFpsTime = performance.now(), frameCount = 0;
+let frameCount = 0, lastFpsTime = performance.now();
 let started = false;
 let videoStream = null;
 let gestureTimer = null;
+// Single-hand pinch zoom
 let pinchStartDist = null, pinchStartZoom = null;
+// Two-hand spread zoom
+let twoHandStartDist = null, twoHandStartZoom = null;
 
 const loaderBar = document.getElementById('loader-bar');
 const loadStatus = document.getElementById('load-status');
 
-// ─── THREE.JS GALAXY SETUP ─────────────────────────────────────────────────
+// ─── THREE.JS GALAXY ──────────────────────────────────────────────────────
 function initThree() {
   const canvas = document.getElementById('galaxy-canvas');
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setClearColor(0x020510);
+  renderer.setClearColor(0x00020a);
 
   scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x020510, 0.025);
+  scene.fog = new THREE.FogExp2(0x00020a, 0.018);
 
   camera3D = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
   updateCamera();
 
   buildGalaxy();
-  buildNebula();
-  buildStarField();
-  buildDustCloud();
   buildNebulaClouds();
+  buildCoreGlow();
+  buildDustArms();
+  buildStarField();
 
   window.addEventListener('resize', onResize);
 }
 
 function buildGalaxy() {
-  // Spiral galaxy with multiple arms
-  const N = 80000;
+  // Dải sao xoắn ốc — màu theo ảnh model:
+  // lõi: trắng ấm → hồng/đỏ → tím → xanh dương → viền tím đậm
+  const N = 100000;
   const positions = new Float32Array(N * 3);
   const colors = new Float32Array(N * 3);
   const sizes = new Float32Array(N);
 
-  const arms = 3;
-  const spinFactor = 3.5;
-  const spread = 0.35;
+  const arms = 4;
+  const spinFactor = 4.0;
+  const spread = 0.3;
 
   for (let i = 0; i < N; i++) {
-    const armIndex = i % arms;
-    const armAngle = (armIndex / arms) * Math.PI * 2;
-    const r = Math.pow(Math.random(), 0.6) * 5.5;
+    const armIdx = i % arms;
+    const armAngle = (armIdx / arms) * Math.PI * 2;
+    const r = Math.pow(Math.random(), 0.55) * 5.8;
     const spin = r * spinFactor;
-    const angle = armAngle + spin + (Math.random() - 0.5) * spread * (r + 0.5);
+    const angle = armAngle + spin + (Math.random() - 0.5) * spread * (r * 0.5 + 0.5);
 
-    const xSpread = (Math.random() - 0.5) * spread * (r * 0.4 + 0.3);
-    const ySpread = (Math.random() - 0.5) * 0.25 * Math.exp(-r * 0.4);
-    const zSpread = (Math.random() - 0.5) * spread * (r * 0.4 + 0.3);
+    const xSp = (Math.random() - 0.5) * spread * (r * 0.45 + 0.3);
+    const ySp = (Math.random() - 0.5) * 0.22 * Math.exp(-r * 0.5);
+    const zSp = (Math.random() - 0.5) * spread * (r * 0.45 + 0.3);
 
-    positions[i * 3]     = Math.cos(angle) * r + xSpread;
-    positions[i * 3 + 1] = ySpread;
-    positions[i * 3 + 2] = Math.sin(angle) * r + zSpread;
+    positions[i*3]   = Math.cos(angle) * r + xSp;
+    positions[i*3+1] = ySp;
+    positions[i*3+2] = Math.sin(angle) * r + zSp;
 
-    // Color: core = warm white/yellow, arms = blue/purple, edges = pink/red
-    const t = r / 5.5;
+    const t = r / 5.8;
     let cr, cg, cb;
-    if (t < 0.2) {
-      // Core: warm white
-      cr = 1.0; cg = 0.9; cb = 0.85;
-    } else if (t < 0.5) {
-      // Middle: star blue
-      const f = (t - 0.2) / 0.3;
-      cr = 1.0 - f * 0.5; cg = 0.9 - f * 0.3; cb = 0.85 + f * 0.15;
-    } else if (t < 0.75) {
-      // Outer: purple/blue
-      const f = (t - 0.5) / 0.25;
-      cr = 0.5 - f * 0.2; cg = 0.6 - f * 0.35; cb = 1.0;
+
+    if (t < 0.08) {
+      // Lõi: trắng sáng ấm
+      cr = 1.0; cg = 0.97; cb = 0.92;
+    } else if (t < 0.2) {
+      // Vùng trong: trắng → hồng nhạt
+      const f = (t - 0.08) / 0.12;
+      cr = 1.0; cg = 0.97 - f * 0.15; cb = 0.92 - f * 0.3;
+    } else if (t < 0.38) {
+      // Hồng → đỏ hồng (như ảnh)
+      const f = (t - 0.2) / 0.18;
+      cr = 1.0 - f * 0.05; cg = 0.82 - f * 0.35; cb = 0.62 - f * 0.25;
+    } else if (t < 0.55) {
+      // Đỏ hồng → tím
+      const f = (t - 0.38) / 0.17;
+      cr = 0.95 - f * 0.35; cg = 0.47 - f * 0.2; cb = 0.37 + f * 0.45;
+    } else if (t < 0.72) {
+      // Tím → xanh tím
+      const f = (t - 0.55) / 0.17;
+      cr = 0.60 - f * 0.3; cg = 0.27 - f * 0.05; cb = 0.82 + f * 0.1;
     } else {
-      // Edge: pink nebula
-      const f = (t - 0.75) / 0.25;
-      cr = 0.3 + f * 0.6; cg = 0.25 - f * 0.05; cb = 1.0 - f * 0.5;
+      // Viền: xanh tím → xanh đậm
+      const f = (t - 0.72) / 0.28;
+      cr = 0.30 - f * 0.18; cg = 0.22 + f * 0.05; cb = 0.92 - f * 0.25;
     }
 
-    // Vary brightness
-    const bright = 0.5 + Math.random() * 0.5;
-    colors[i * 3]     = cr * bright;
-    colors[i * 3 + 1] = cg * bright;
-    colors[i * 3 + 2] = cb * bright;
+    const bright = 0.45 + Math.random() * 0.55;
+    colors[i*3]   = cr * bright;
+    colors[i*3+1] = cg * bright;
+    colors[i*3+2] = cb * bright;
 
-    // Vary size — core stars bigger
-    sizes[i] = t < 0.15 ? (0.06 + Math.random() * 0.1) : (0.015 + Math.random() * 0.04);
+    sizes[i] = t < 0.12 ? (0.07 + Math.random() * 0.12) : (0.012 + Math.random() * 0.038);
   }
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+  geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
 
   const mat = new THREE.ShaderMaterial({
     uniforms: {
@@ -445,32 +442,26 @@ function buildGalaxy() {
       attribute float size;
       attribute vec3 color;
       varying vec3 vColor;
-      varying float vDist;
       uniform float time;
       uniform float pixelRatio;
-
       void main() {
         vColor = color;
         vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-        vDist = length(position.xz);
-        float twinkle = 0.85 + 0.15 * sin(time * 2.0 + position.x * 13.7 + position.z * 9.3);
-        gl_PointSize = size * pixelRatio * (300.0 / -mvPos.z) * twinkle;
+        float twinkle = 0.82 + 0.18 * sin(time * 2.5 + position.x * 17.3 + position.z * 11.7);
+        gl_PointSize = size * pixelRatio * (320.0 / -mvPos.z) * twinkle;
         gl_Position = projectionMatrix * mvPos;
       }
     `,
     fragmentShader: `
       varying vec3 vColor;
-      varying float vDist;
-
       void main() {
         vec2 uv = gl_PointCoord - 0.5;
         float d = length(uv);
         if (d > 0.5) discard;
-        float alpha = 1.0 - smoothstep(0.1, 0.5, d);
-        // Soft glow
-        float glow = exp(-d * 6.0) * 0.7;
-        vec3 col = vColor + glow * vec3(0.3, 0.3, 0.5);
-        gl_FragColor = vec4(col, alpha * 0.9);
+        float alpha = 1.0 - smoothstep(0.08, 0.5, d);
+        float glow = exp(-d * 5.5) * 0.65;
+        vec3 col = vColor + glow * vec3(0.35, 0.2, 0.45);
+        gl_FragColor = vec4(col, alpha * 0.92);
       }
     `,
     transparent: true,
@@ -483,32 +474,44 @@ function buildGalaxy() {
   scene.add(galaxyMesh);
 }
 
-function buildNebula() {
-  // Large glowing nebula clouds in the core
-  const N = 1200;
+function buildNebulaClouds() {
+  // Đám mây nebula tím/xanh xung quanh — giống ảnh model
+  const N = 2500;
   const positions = new Float32Array(N * 3);
   const colors = new Float32Array(N * 3);
   const sizes = new Float32Array(N);
 
   for (let i = 0; i < N; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const r = Math.pow(Math.random(), 1.2) * 2.5;
-    positions[i * 3]     = Math.cos(angle) * r + (Math.random() - 0.5) * 0.8;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 0.4;
-    positions[i * 3 + 2] = Math.sin(angle) * r + (Math.random() - 0.5) * 0.8;
+    const r = 1.5 + Math.pow(Math.random(), 0.7) * 5.0;
+    const cloudAngle = angle + r * 3.8 + (Math.random() - 0.5) * 0.9;
+
+    positions[i*3]   = Math.cos(cloudAngle) * r + (Math.random()-0.5) * 1.2;
+    positions[i*3+1] = (Math.random()-0.5) * 0.7 * Math.exp(-r * 0.2);
+    positions[i*3+2] = Math.sin(cloudAngle) * r + (Math.random()-0.5) * 1.2;
 
     const t = Math.random();
-    if (t < 0.33) { colors[i*3]=0.55; colors[i*3+1]=0.15; colors[i*3+2]=0.9; }
-    else if (t < 0.66) { colors[i*3]=0.15; colors[i*3+1]=0.6; colors[i*3+2]=0.95; }
-    else { colors[i*3]=0.9; colors[i*3+1]=0.3; colors[i*3+2]=0.7; }
+    if (t < 0.25) {
+      // Tím sâu (như đám mây viền ngoài)
+      colors[i*3]=0.28; colors[i*3+1]=0.08; colors[i*3+2]=0.55;
+    } else if (t < 0.5) {
+      // Xanh tím
+      colors[i*3]=0.12; colors[i*3+1]=0.15; colors[i*3+2]=0.65;
+    } else if (t < 0.75) {
+      // Hồng tím (vùng giữa)
+      colors[i*3]=0.65; colors[i*3+1]=0.18; colors[i*3+2]=0.55;
+    } else {
+      // Xanh dương đậm
+      colors[i*3]=0.08; colors[i*3+1]=0.22; colors[i*3+2]=0.72;
+    }
 
-    sizes[i] = 0.4 + Math.random() * 1.2;
+    sizes[i] = 0.5 + Math.random() * 2.0;
   }
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+  geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
 
   const mat = new THREE.ShaderMaterial({
     uniforms: { time: { value: 0 }, pixelRatio: { value: renderer.getPixelRatio() } },
@@ -521,8 +524,8 @@ function buildNebula() {
       void main() {
         vColor = color;
         vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-        float pulse = 0.9 + 0.1 * sin(time * 0.8 + position.x * 5.0);
-        gl_PointSize = size * pixelRatio * (280.0 / -mvPos.z) * pulse;
+        float pulse = 0.88 + 0.12 * sin(time * 0.6 + position.x * 3.7 + position.z * 2.9);
+        gl_PointSize = size * pixelRatio * (300.0 / -mvPos.z) * pulse;
         gl_Position = projectionMatrix * mvPos;
       }
     `,
@@ -532,7 +535,7 @@ function buildNebula() {
         vec2 uv = gl_PointCoord - 0.5;
         float d = length(uv);
         if (d > 0.5) discard;
-        float alpha = exp(-d * 3.5) * 0.35;
+        float alpha = exp(-d * 2.8) * 0.45;
         gl_FragColor = vec4(vColor, alpha);
       }
     `,
@@ -546,82 +549,136 @@ function buildNebula() {
   scene.add(nebulaParticles);
 }
 
-function buildStarField() {
-  // Background stars
-  const N = 5000;
-  const pos = new Float32Array(N * 3);
+function buildCoreGlow() {
+  // Ánh sáng lõi trắng hồng (sprite lớn ở trung tâm)
+  const N = 300;
+  const positions = new Float32Array(N * 3);
+  const colors = new Float32Array(N * 3);
+  const sizes = new Float32Array(N);
+
   for (let i = 0; i < N; i++) {
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    const r = 40 + Math.random() * 60;
-    pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
-    pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-    pos[i*3+2] = r * Math.cos(phi);
+    const angle = Math.random() * Math.PI * 2;
+    const r = Math.pow(Math.random(), 1.8) * 1.2;
+    positions[i*3]   = Math.cos(angle) * r + (Math.random()-0.5)*0.3;
+    positions[i*3+1] = (Math.random()-0.5)*0.15;
+    positions[i*3+2] = Math.sin(angle) * r + (Math.random()-0.5)*0.3;
+
+    const t = r / 1.2;
+    if (t < 0.3) {
+      colors[i*3]=1.0; colors[i*3+1]=0.98; colors[i*3+2]=0.95; // trắng sáng
+    } else if (t < 0.6) {
+      colors[i*3]=1.0; colors[i*3+1]=0.75; colors[i*3+2]=0.8;  // hồng nhạt
+    } else {
+      colors[i*3]=0.95; colors[i*3+1]=0.45; colors[i*3+2]=0.65; // đỏ hồng
+    }
+    sizes[i] = 0.3 + Math.random() * 1.8;
   }
+
   const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const mat = new THREE.PointsMaterial({
-    color: 0xffffff, size: 0.08, transparent: true, opacity: 0.7,
-    blending: THREE.AdditiveBlending, depthWrite: false
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
+
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { time: { value: 0 }, pixelRatio: { value: renderer.getPixelRatio() } },
+    vertexShader: `
+      attribute float size;
+      attribute vec3 color;
+      varying vec3 vColor;
+      uniform float time;
+      uniform float pixelRatio;
+      void main() {
+        vColor = color;
+        vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+        float pulse = 0.9 + 0.1 * sin(time * 1.2 + position.x * 8.0);
+        gl_PointSize = size * pixelRatio * (350.0 / -mvPos.z) * pulse;
+        gl_Position = projectionMatrix * mvPos;
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vColor;
+      void main() {
+        vec2 uv = gl_PointCoord - 0.5;
+        float d = length(uv);
+        if (d > 0.5) discard;
+        float alpha = exp(-d * 2.2) * 0.55;
+        gl_FragColor = vec4(vColor, alpha);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    vertexColors: true,
+    blending: THREE.AdditiveBlending,
   });
-  scene.add(new THREE.Points(geo, mat));
+
+  coreGlow = new THREE.Points(geo, mat);
+  scene.add(coreGlow);
 }
 
-function buildDustCloud() {
-  const N = 3000;
+function buildDustArms() {
+  // Bụi tối dọc theo cánh tay xoắn ốc
+  const N = 4000;
   const pos = new Float32Array(N * 3);
   const col = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) {
-    const arm = Math.floor(Math.random() * 3);
-    const armA = (arm / 3) * Math.PI * 2;
-    const r = 0.5 + Math.pow(Math.random(), 0.5) * 5;
-    const spin = r * 3.5;
-    const angle = armA + spin + (Math.random() - 0.5) * 0.8;
-    pos[i*3]   = Math.cos(angle) * r + (Math.random()-0.5)*0.6;
-    pos[i*3+1] = (Math.random()-0.5) * 0.15;
-    pos[i*3+2] = Math.sin(angle) * r + (Math.random()-0.5)*0.6;
-    col[i*3]=0.25; col[i*3+1]=0.15; col[i*3+2]=0.45;
+    const arm = i % 4;
+    const armA = (arm / 4) * Math.PI * 2;
+    const r = 0.8 + Math.pow(Math.random(), 0.6) * 5.0;
+    const spin = r * 4.0;
+    const angle = armA + spin + (Math.random() - 0.5) * 0.65;
+    pos[i*3]   = Math.cos(angle) * r + (Math.random()-0.5)*0.5;
+    pos[i*3+1] = (Math.random()-0.5) * 0.12;
+    pos[i*3+2] = Math.sin(angle) * r + (Math.random()-0.5)*0.5;
+    // màu tím đen như vệt bụi trong ảnh
+    col[i*3]=0.18; col[i*3+1]=0.06; col[i*3+2]=0.32;
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
   const mat = new THREE.PointsMaterial({
-    size: 0.18, transparent: true, opacity: 0.12,
+    size: 0.14, transparent: true, opacity: 0.18,
     vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false
   });
   dustCloud = new THREE.Points(geo, mat);
   scene.add(dustCloud);
 }
 
-function buildNebulaClouds() {
-  // Faint background nebula rings
-  const ring = new THREE.TorusGeometry(2.2, 0.35, 8, 60);
-  const mat = new THREE.MeshBasicMaterial({
-    color: 0x3b0fa0, transparent: true, opacity: 0.04,
-    side: THREE.DoubleSide, wireframe: true
+function buildStarField() {
+  // Nền sao trắng (như ảnh: nền đen có nhiều sao trắng nhỏ)
+  const N = 7000;
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = 50 + Math.random() * 80;
+    pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+    pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    pos[i*3+2] = r * Math.cos(phi);
+    // Một số sao xanh lạnh, một số trắng ấm
+    const warm = Math.random() > 0.5;
+    col[i*3]   = warm ? 0.9 : 0.7;
+    col[i*3+1] = warm ? 0.9 : 0.75;
+    col[i*3+2] = warm ? 0.85 : 1.0;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({
+    size: 0.07, transparent: true, opacity: 0.8,
+    vertexColors: true,
+    blending: THREE.AdditiveBlending, depthWrite: false
   });
-  const mesh = new THREE.Mesh(ring, mat);
-  mesh.rotation.x = Math.PI / 2;
-  scene.add(mesh);
-
-  const ring2 = new THREE.TorusGeometry(4.0, 0.2, 6, 80);
-  const mat2 = new THREE.MeshBasicMaterial({
-    color: 0x1a4a8a, transparent: true, opacity: 0.03,
-    side: THREE.DoubleSide, wireframe: true
-  });
-  const mesh2 = new THREE.Mesh(ring2, mat2);
-  mesh2.rotation.x = Math.PI / 2;
-  scene.add(mesh2);
+  scene.add(new THREE.Points(geo, mat));
 }
 
 function updateCamera() {
   const azRad = azimuth * Math.PI / 180;
   const elRad = elevation * Math.PI / 180;
-  const d = distance;
   camera3D.position.set(
-    d * Math.cos(elRad) * Math.sin(azRad),
-    d * Math.sin(elRad),
-    d * Math.cos(elRad) * Math.cos(azRad)
+    distance * Math.cos(elRad) * Math.sin(azRad),
+    distance * Math.sin(elRad),
+    distance * Math.cos(elRad) * Math.cos(azRad)
   );
   camera3D.lookAt(0, 0, 0);
 }
@@ -632,27 +689,22 @@ function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// ─── MEDIAPIPE HANDS ───────────────────────────────────────────────────────
+// ─── MEDIAPIPE ────────────────────────────────────────────────────────────
 async function loadMediaPipe() {
   loadStatus.textContent = 'Tải MediaPipe Hands...';
   loaderBar.style.width = '20%';
-
   return new Promise((resolve, reject) => {
-    const script1 = document.createElement('script');
-    script1.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
-    script1.onload = () => {
-      const script2 = document.createElement('script');
-      script2.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
-      script2.onload = () => {
-        loaderBar.style.width = '60%';
-        loadStatus.textContent = 'Khởi tạo AI model...';
-        resolve();
-      };
-      script2.onerror = reject;
-      document.head.appendChild(script2);
+    const s1 = document.createElement('script');
+    s1.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
+    s1.onload = () => {
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
+      s2.onload = () => { loaderBar.style.width = '60%'; loadStatus.textContent = 'Khởi tạo AI model...'; resolve(); };
+      s2.onerror = reject;
+      document.head.appendChild(s2);
     };
-    script1.onerror = reject;
-    document.head.appendChild(script1);
+    s1.onerror = reject;
+    document.head.appendChild(s1);
   });
 }
 
@@ -662,14 +714,12 @@ async function initHandTracking() {
   handDetector = new Hands({
     locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
   });
-
   handDetector.setOptions({
-    maxNumHands: 1,
+    maxNumHands: 2,           // ← 2 tay
     modelComplexity: 1,
     minDetectionConfidence: 0.65,
     minTrackingConfidence: 0.55
   });
-
   handDetector.onResults(onHandResults);
 
   try {
@@ -678,295 +728,60 @@ async function initHandTracking() {
     });
     video.srcObject = videoStream;
     await video.play();
-
     loaderBar.style.width = '90%';
     loadStatus.textContent = 'Camera sẵn sàng!';
 
-    const mpCamera = new Camera(video, {
-      onFrame: async () => {
-        if (handDetector) await handDetector.send({ image: video });
-      },
+    // Kiểm tra Camera utils đã load chưa
+    if (typeof Camera === 'undefined') {
+      throw new Error('Camera utils chưa load xong');
+    }
+
+    const mpCam = new Camera(video, {
+      onFrame: async () => { if (handDetector) await handDetector.send({ image: video }); },
       width: 320, height: 240
     });
-    mpCamera.start();
+    mpCam.start();
   } catch (e) {
-    loadStatus.textContent = '⚠️ Không thể truy cập camera';
+    loadStatus.textContent = '⚠️ Không thể truy cập camera: ' + e.message;
     throw e;
   }
 }
 
-// ─── GESTURE RECOGNITION ───────────────────────────────────────────────────
+// ─── GESTURE RECOGNITION ──────────────────────────────────────────────────
 function dist2D(a, b) {
   return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2);
 }
 
 function recognizeGesture(lm) {
-  // Landmark indices
-  const WRIST = lm[0], THUMB_TIP = lm[4], INDEX_TIP = lm[8],
-        MIDDLE_TIP = lm[12], RING_TIP = lm[16], PINKY_TIP = lm[20],
-        INDEX_MCP = lm[5], MIDDLE_MCP = lm[9], RING_MCP = lm[13], PINKY_MCP = lm[17],
-        THUMB_IP = lm[3], THUMB_MCP = lm[2],
-        INDEX_PIP = lm[6], MIDDLE_PIP = lm[10];
+  const WRIST=lm[0], THUMB_TIP=lm[4], INDEX_TIP=lm[8],
+        MIDDLE_TIP=lm[12], RING_TIP=lm[16], PINKY_TIP=lm[20],
+        MIDDLE_MCP=lm[9], THUMB_IP=lm[3];
 
-  // Finger extended checks (tip above pip relative to wrist)
   const fingerUp = (tip, pip) => tip.y < pip.y;
-  const thumbOut = THUMB_TIP.x < THUMB_IP.x; // left hand mirrored
-
-  const indexUp  = fingerUp(INDEX_TIP,  lm[6]);
+  const indexUp  = fingerUp(INDEX_TIP, lm[6]);
   const middleUp = fingerUp(MIDDLE_TIP, lm[10]);
-  const ringUp   = fingerUp(RING_TIP,   lm[14]);
-  const pinkyUp  = fingerUp(PINKY_TIP,  lm[18]);
+  const ringUp   = fingerUp(RING_TIP, lm[14]);
+  const pinkyUp  = fingerUp(PINKY_TIP, lm[18]);
 
-  const allFingersUp = indexUp && middleUp && ringUp && pinkyUp;
-  const allFingersDown = !indexUp && !middleUp && !ringUp && !pinkyUp;
+  const allDown = !indexUp && !middleUp && !ringUp && !pinkyUp;
 
-  // Pinch: thumb + index close
   const pinchDist = dist2D(THUMB_TIP, INDEX_TIP);
   const handSize  = dist2D(WRIST, MIDDLE_MCP);
   const isPinch   = pinchDist < handSize * 0.3;
 
-  // OK sign: thumb-index circle + other fingers up
-  const isOK = isPinch && middleUp && ringUp && pinkyUp;
+  const isOK     = isPinch && middleUp && ringUp && pinkyUp;
+  const isFist   = allDown && !isPinch;
+  const isOpen   = indexUp && middleUp && ringUp && pinkyUp;
+  const isPeace  = indexUp && middleUp && !ringUp && !pinkyUp;
+  const isPoint  = indexUp && !middleUp && !ringUp && !pinkyUp;
 
-  // Fist
-  const isFist = allFingersDown && !isPinch;
-
-  // Open palm
-  const isOpen = allFingersUp;
-
-  // Point up: only index up
-  const isPoint = indexUp && !middleUp && !ringUp && !pinkyUp;
-
-  // Peace / V: index + middle up
-  const isPeace = indexUp && middleUp && !ringUp && !pinkyUp;
-
-  if (isOK) return { name: 'OK', icon: '👌', pinchDist, handSize };
-  if (isFist) return { name: 'FIST', icon: '✊', pinchDist, handSize };
-  if (isPinch) return { name: 'PINCH', icon: '🤏', pinchDist, handSize };
-  if (isOpen) return { name: 'OPEN', icon: '🖐️', pinchDist, handSize };
-  if (isPeace) return { name: 'PEACE', icon: '✌️', pinchDist, handSize };
-  if (isPoint) return { name: 'POINT', icon: '👆', pinchDist, handSize };
-  return { name: 'NEUTRAL', icon: '✋', pinchDist, handSize };
+  if (isOK)    return { name:'OK',      icon:'👌', pinchDist, handSize };
+  if (isFist)  return { name:'FIST',    icon:'✊', pinchDist, handSize };
+  if (isPinch) return { name:'PINCH',   icon:'🤏', pinchDist, handSize };
+  if (isOpen)  return { name:'OPEN',    icon:'🖐️', pinchDist, handSize };
+  if (isPeace) return { name:'PEACE',   icon:'✌️', pinchDist, handSize };
+  if (isPoint) return { name:'POINT',   icon:'👆', pinchDist, handSize };
+  return         { name:'NEUTRAL', icon:'✋', pinchDist, handSize };
 }
 
 function onHandResults(results) {
-  handResults = results;
-
-  const hCanvas = document.getElementById('hand-canvas');
-  const ctx = hCanvas.getContext('2d');
-  hCanvas.width = 200; hCanvas.height = 130;
-  ctx.clearRect(0, 0, 200, 130);
-
-  const hGlow = document.getElementById('hand-glow');
-
-  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-    prevHandX = null; prevHandY = null;
-    pinchStartDist = null;
-    hGlow.style.display = 'none';
-    document.getElementById('s-gesture').textContent = '—';
-    document.getElementById('s-conf').textContent = '—';
-    autoRotate = true;
-    return;
-  }
-
-  autoRotate = false;
-  const lm = results.multiHandLandmarks[0];
-  const gesture = recognizeGesture(lm);
-
-  // Draw skeleton on mini-canvas
-  drawHandSkeleton(ctx, lm, 200, 130, gesture);
-
-  // Wrist position (mirrored)
-  const wx = (1 - lm[0].x) * window.innerWidth;
-  const wy = lm[0].y * window.innerHeight;
-  hGlow.style.display = 'block';
-  hGlow.style.left = wx + 'px';
-  hGlow.style.top  = wy + 'px';
-
-  // Confidence from wrist visibility
-  const conf = results.multiHandWorldLandmarks?.[0]?.[0]?.visibility ?? 0.9;
-  document.getElementById('s-conf').textContent = Math.round(conf * 100) + '%';
-  document.getElementById('s-gesture').textContent = gesture.icon + ' ' + gesture.name;
-
-  // Hand center
-  const cx = (1 - lm[9].x); // normalized 0-1, mirrored
-  const cy = lm[9].y;
-
-  gestureCooldown = Math.max(0, gestureCooldown - 1);
-
-  // Apply gestures
-  if (gesture.name === 'OK' && gestureCooldown === 0) {
-    // Reset camera
-    targetAz = 0; targetEl = 25; targetDist = 6;
-    showGestureBadge('👌 RESET CAMERA');
-    gestureCooldown = 40;
-    pinchStartDist = null;
-  } else if (gesture.name === 'PINCH') {
-    // Zoom via pinch distance change
-    const relDist = gesture.pinchDist / gesture.handSize;
-    if (pinchStartDist === null) {
-      pinchStartDist = relDist;
-      pinchStartZoom = targetDist;
-    } else {
-      const delta = (pinchStartDist - relDist) * 15;
-      targetDist = Math.max(2.5, Math.min(14, pinchStartZoom + delta));
-    }
-    showGestureBadge('🤏 ZOOM ' + targetDist.toFixed(1) + 'x');
-  } else {
-    pinchStartDist = null;
-
-    if (gesture.name === 'FIST' || gesture.name === 'POINT') {
-      // Orbital drag
-      if (prevHandX !== null) {
-        const dx = (cx - prevHandX) * 180;
-        const dy = (cy - prevHandY) * 120;
-        targetAz  += dx * 2.5;
-        targetEl = Math.max(-85, Math.min(85, targetEl - dy * 2.0));
-      }
-    } else if (gesture.name === 'OPEN') {
-      // Float/drift — gentle orbit
-      targetAz += 0.4;
-    } else if (gesture.name === 'PEACE') {
-      // Speed orbit
-      targetAz += 1.2;
-      showGestureBadge('✌️ TURBO ORBIT');
-    } else {
-      // Default: use hand position for gentle camera guide
-      if (prevHandX !== null) {
-        const dx = (cx - prevHandX) * 120;
-        const dy = (cy - prevHandY) * 80;
-        targetAz  += dx * 1.5;
-        targetEl = Math.max(-85, Math.min(85, targetEl - dy * 1.5));
-      }
-    }
-  }
-
-  prevHandX = cx;
-  prevHandY = cy;
-}
-
-function drawHandSkeleton(ctx, lm, w, h, gesture) {
-  const CONNECTIONS = [
-    [0,1],[1,2],[2,3],[3,4], // thumb
-    [0,5],[5,6],[6,7],[7,8], // index
-    [0,9],[9,10],[10,11],[11,12], // middle
-    [0,13],[13,14],[14,15],[15,16], // ring
-    [0,17],[17,18],[18,19],[19,20], // pinky
-    [5,9],[9,13],[13,17]  // palm
-  ];
-
-  const px = lm.map(p => [(1-p.x)*w, p.y*h]);
-
-  // Skeleton lines
-  ctx.strokeStyle = 'rgba(56,189,248,0.5)';
-  ctx.lineWidth = 1.5;
-  CONNECTIONS.forEach(([a,b]) => {
-    ctx.beginPath();
-    ctx.moveTo(px[a][0], px[a][1]);
-    ctx.lineTo(px[b][0], px[b][1]);
-    ctx.stroke();
-  });
-
-  // Joints
-  px.forEach(([x, y], i) => {
-    const isTip = [4,8,12,16,20].includes(i);
-    ctx.beginPath();
-    ctx.arc(x, y, isTip ? 3.5 : 2, 0, Math.PI*2);
-    ctx.fillStyle = isTip ? '#f472b6' : '#38bdf8';
-    ctx.fill();
-  });
-}
-
-function showGestureBadge(text) {
-  const badge = document.getElementById('gesture-badge');
-  badge.textContent = text;
-  badge.classList.add('show');
-  clearTimeout(gestureTimer);
-  gestureTimer = setTimeout(() => badge.classList.remove('show'), 1800);
-}
-
-// ─── RENDER LOOP ───────────────────────────────────────────────────────────
-let time = 0;
-
-function animate() {
-  requestAnimationFrame(animate);
-  time += 0.008;
-
-  // FPS
-  frameCount++;
-  const now = performance.now();
-  if (now - lastFpsTime > 1000) {
-    const fps = Math.round(frameCount * 1000 / (now - lastFpsTime));
-    document.getElementById('fps-badge').textContent = fps + ' FPS';
-    frameCount = 0;
-    lastFpsTime = now;
-  }
-
-  // Auto rotate when no hand
-  if (autoRotate) targetAz += 0.08;
-
-  // Smooth camera interpolation
-  azimuth  += (targetAz  - azimuth)  * 0.06;
-  elevation += (targetEl  - elevation) * 0.06;
-  distance  += (targetDist - distance) * 0.06;
-
-  updateCamera();
-
-  // Update HUD
-  document.getElementById('s-az').textContent = Math.round(azimuth % 360) + '°';
-  document.getElementById('s-el').textContent = Math.round(elevation) + '°';
-  document.getElementById('s-zoom').textContent = (6 / distance).toFixed(1) + 'x';
-
-  // Animate galaxy
-  if (galaxyMesh) {
-    galaxyMesh.material.uniforms.time.value = time;
-    galaxyMesh.rotation.y = time * 0.05;
-  }
-  if (nebulaParticles) {
-    nebulaParticles.material.uniforms.time.value = time;
-    nebulaParticles.rotation.y = time * 0.03;
-  }
-  if (dustCloud) dustCloud.rotation.y = -time * 0.02;
-
-  renderer.render(scene, camera3D);
-}
-
-// ─── INIT ──────────────────────────────────────────────────────────────────
-async function init() {
-  initThree();
-  animate();
-
-  try {
-    await loadMediaPipe();
-    loaderBar.style.width = '80%';
-    loadStatus.textContent = 'Sẵn sàng! Nhấn để bắt đầu';
-    document.getElementById('btn-start').style.display = 'block';
-  } catch (e) {
-    loadStatus.textContent = '⚠️ Lỗi tải MediaPipe: ' + e.message;
-    document.getElementById('btn-start').style.display = 'block';
-    document.getElementById('btn-start').textContent = 'Tiếp tục không có tay';
-  }
-}
-
-async function startExperience() {
-  loaderBar.style.width = '85%';
-  loadStatus.textContent = 'Đang khởi động camera...';
-
-  try {
-    await initHandTracking();
-    loaderBar.style.width = '100%';
-    loadStatus.textContent = '✨ Thiên hà sẵn sàng!';
-    await new Promise(r => setTimeout(r, 600));
-    document.getElementById('loading').classList.add('hidden');
-    showGestureBadge('🌌 THIÊN HÀ ĐÃ SẴN SÀNG');
-  } catch (e) {
-    // Start without camera
-    document.getElementById('loading').classList.add('hidden');
-    showGestureBadge('⚠️ Không có camera — chế độ xem');
-  }
-}
-
-init();
-</script>
-</body>
-</html>
