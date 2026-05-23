@@ -1,1010 +1,972 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎄 AR Cây Thông Noel - 360° Orbital Control</title>
-  
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      overflow: hidden;
-      font-family: 'Georgia', serif;
-      background: #000;
-    }
-    
-    #canvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-    }
-    
-    #video {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      object-fit: cover;
-      transform: scaleX(-1);
-      z-index: -1;
-      display: none;
-    }
-    
-    #video.active {
-      display: block;
-    }
-    
-    .ui {
-      position: fixed;
-      color: white;
-      font-size: 14px;
-      z-index: 10;
-      background: rgba(0,0,0,0.9);
-      padding: 14px 26px;
-      border-radius: 30px;
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.3);
-      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-    }
-    
-    .top-left {
-      top: 20px;
-      left: 20px;
-      font-weight: 600;
-      font-size: 15px;
-      max-width: 280px;
-    }
-    
-    .top-right {
-      top: 20px;
-      right: 20px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    
-    /* MOVED TO BOTTOM RIGHT */
-    .bottom-right {
-      bottom: 24px;
-      right: 24px;
-      max-width: 340px;
-      font-size: 12px;
-    }
-    
-    .bottom {
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 16px;
-      font-style: italic;
-      background: linear-gradient(135deg, rgba(139,69,19,0.95), rgba(34,139,34,0.95));
-      padding: 14px 32px;
-    }
-    
-    button {
-      background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2));
-      border: 1px solid rgba(255,255,255,0.5);
-      color: white;
-      padding: 10px 18px;
-      border-radius: 25px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: bold;
-      transition: all 0.3s;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
-    
-    button:hover {
-      background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.3));
-      transform: translateY(-2px);
-    }
-    
-    .instructions {
-      position: fixed;
-      bottom: 100px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: linear-gradient(135deg, rgba(139,69,19,0.98), rgba(34,139,34,0.98));
-      padding: 35px 40px;
-      border-radius: 25px;
-      color: white;
-      text-align: center;
-      max-width: 560px;
-      z-index: 100;
-      border: 2px solid rgba(255,215,0,0.6);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-    }
-    
-    .instructions h2 {
-      margin-bottom: 24px;
-      font-size: 28px;
-      text-shadow: 0 3px 10px rgba(0,0,0,0.5);
-      color: #ffd700;
-    }
-    
-    .instructions p {
-      margin: 12px 0;
-      font-size: 15px;
-      line-height: 1.7;
-    }
-    
-    .instructions strong {
-      color: #ffd700;
-    }
-    
-    .hide {
-      display: none !important;
-    }
-    
-    .gesture-icon {
-      display: inline-block;
-      font-size: 26px;
-      margin-right: 8px;
-    }
-    
-    .loading {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      flex-direction: column;
-    }
-    
-    .loading-text {
-      color: white;
-      font-size: 24px;
-      margin-top: 20px;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-20px); }
-    }
-    
-    .float {
-      animation: float 2s ease-in-out infinite;
-      font-size: 80px;
-    }
-    
-    .rotation-trail {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      width: 120px;
-      height: 120px;
-      margin: -60px 0 0 -60px;
-      border: 3px dashed rgba(0, 200, 255, 0.4);
-      border-radius: 50%;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    
-    .rotation-trail.active {
-      opacity: 1;
-      animation: rotateTrail 3s linear infinite;
-    }
-    
-    @keyframes rotateTrail {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌌 Dải Thiên Hà - Hand Control</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --cosmic-dark: #030510;
+    --nebula-purple: #6b21f5;
+    --star-blue: #38bdf8;
+    --nova-pink: #f472b6;
+    --glow-cyan: #22d3ee;
+    --text-dim: rgba(148,163,184,0.7);
+  }
+
+  body {
+    background: var(--cosmic-dark);
+    color: #e2e8f0;
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
+    height: 100dvh;
+    width: 100vw;
+  }
+
+  #galaxy-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+  }
+
+  #cam-video {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    width: 200px;
+    height: 130px;
+    border-radius: 12px;
+    border: 1px solid rgba(56,189,248,0.3);
+    object-fit: cover;
+    transform: scaleX(-1);
+    z-index: 10;
+    opacity: 0.85;
+  }
+
+  #hand-canvas {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    width: 200px;
+    height: 130px;
+    border-radius: 12px;
+    z-index: 11;
+    pointer-events: none;
+  }
+
+  /* HUD */
+  #hud {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 20;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: linear-gradient(to bottom, rgba(3,5,16,0.9) 0%, transparent 100%);
+  }
+
+  .hud-title {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: clamp(14px, 2.5vw, 22px);
+    background: linear-gradient(135deg, var(--star-blue), var(--nova-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 2px;
+  }
+
+  .hud-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  #stats-panel {
+    background: rgba(3,5,16,0.7);
+    border: 1px solid rgba(56,189,248,0.2);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-family: 'Orbitron', monospace;
+    min-width: 160px;
+    backdrop-filter: blur(8px);
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .stat-label { color: var(--text-dim); }
+  .stat-val { color: var(--glow-cyan); font-weight: 700; }
+
+  /* Gesture indicator */
+  #gesture-badge {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 30;
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(14px, 3vw, 20px);
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: 30px;
+    background: rgba(107,33,245,0.35);
+    border: 1px solid rgba(107,33,245,0.6);
+    backdrop-filter: blur(12px);
+    color: #e2e8f0;
+    letter-spacing: 2px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    text-align: center;
+  }
+
+  #gesture-badge.show { opacity: 1; }
+
+  /* Controls guide */
+  #controls-guide {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 20;
+    background: rgba(3,5,16,0.75);
+    border: 1px solid rgba(56,189,248,0.15);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 12px;
+    backdrop-filter: blur(8px);
+    max-width: 220px;
+  }
+
+  .guide-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    color: var(--glow-cyan);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .guide-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
+  .guide-icon {
+    font-size: 16px;
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  /* Loading overlay */
+  #loading {
+    position: fixed;
+    inset: 0;
+    background: var(--cosmic-dark);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    transition: opacity 0.8s;
+  }
+
+  #loading.hidden { opacity: 0; pointer-events: none; }
+
+  .loader-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(18px, 4vw, 32px);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--star-blue), var(--nova-pink), var(--nebula-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    letter-spacing: 3px;
+  }
+
+  .loader-status {
+    font-size: 14px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-align: center;
+  }
+
+  .loader-bar-wrap {
+    width: 260px;
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .loader-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--star-blue), var(--nova-pink));
+    width: 0%;
+    border-radius: 3px;
+    transition: width 0.4s;
+    animation: barPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes barPulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .btn-start {
+    display: none;
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    padding: 14px 36px;
+    border-radius: 50px;
+    border: 1px solid var(--star-blue);
+    background: rgba(56,189,248,0.12);
+    color: var(--star-blue);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .btn-start:hover {
+    background: rgba(56,189,248,0.25);
+    box-shadow: 0 0 30px rgba(56,189,248,0.4);
+  }
+
+  /* FPS counter */
+  #fps-badge {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 25;
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    color: rgba(56,189,248,0.5);
+    letter-spacing: 2px;
+  }
+
+  /* Hand detected glow ring */
+  #hand-glow {
+    position: fixed;
+    pointer-events: none;
+    z-index: 15;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(56,189,248,0.3) 0%, transparent 70%);
+    border: 1px solid rgba(56,189,248,0.4);
+    transform: translate(-50%, -50%);
+    transition: opacity 0.2s;
+    opacity: 0;
+    display: none;
+  }
+</style>
 </head>
 <body>
-  <!-- Loading Screen -->
-  <div class="loading" id="loading">
-    <div class="float">🎄</div>
-    <div class="loading-text">Khởi động 360° Orbital Control...</div>
-    <div class="loading-text" style="font-size: 14px; margin-top: 10px; opacity: 0.7;">Vui lòng cho phép camera</div>
-  </div>
 
-  <!-- Video Background -->
-  <video id="video" playsinline autoplay muted></video>
-  
-  <!-- Canvas -->
-  <canvas id="canvas"></canvas>
-  
-  <!-- Rotation Trail Indicator -->
-  <div class="rotation-trail" id="rotationTrail"></div>
-  
-  <!-- UI -->
-  <div class="ui top-left" id="status">
-    <div><span class="gesture-icon">✋</span> <span id="gesture-text">Đang khởi động...</span></div>
-  </div>
-  
-  <div class="ui top-right">
-    <div id="fps">60 FPS</div>
-    <div id="aiFps" style="font-size: 11px; opacity: 0.8;">AI: 0</div>
-    <button onclick="resetCamera()">🎯 Reset</button>
-    <button onclick="location.reload()">🔄</button>
-  </div>
-  
-  <!-- MOVED TO BOTTOM RIGHT -->
-  <div class="ui bottom-right" id="trackingInfo">
-    <div style="font-weight: 600; margin-bottom: 6px;">📊 Tracking Info</div>
-    <div style="font-size: 11px; opacity: 0.9; line-height: 1.6;" id="details">
-      Azimuth: 0°<br>
-      Elevation: 45°<br>
-      Distance: 7.0m
-    </div>
-  </div>
-  
-  <div class="ui bottom">
-    ✨ Created for Jellie
-  </div>
-  
-  <div class="instructions" id="instructions">
-    <h2>🎄 Điều khiển 360° - Quay quanh cây thông</h2>
-    <p>← → <strong>Tay trái/phải</strong> - Quay camera ngang (Azimuth)</p>
-    <p>↑ ↓ <strong>Tay lên/xuống</strong> - Thay đổi góc nhìn (Elevation)</p>
-    <p>🔄 <strong>Xoay tay tròn</strong> - Camera quay theo (Orbital)</p>
-    <p>🤏 <strong>Véo ngón</strong> - Zoom in/out</p>
-    <p>👌 <strong>OK sign</strong> (ngón cái + trỏ tròn) - Reset camera</p>
-    <p style="font-size: 13px; margin-top: 20px; opacity: 0.9; color: #ffd700;">
-      💡 Bạn có thể xoay 360° quanh cây để xem mọi góc độ!
-    </p>
-    <button onclick="hideInstructions()" style="margin-top: 24px; padding: 12px 32px; font-size: 15px;">
-      Bắt đầu trải nghiệm 🎅
-    </button>
-  </div>
+<!-- Loading -->
+<div id="loading">
+  <div class="loader-title">🌌 THIÊN HÀ<br>HAND CONTROL</div>
+  <div class="loader-status" id="load-status">Đang tải MediaPipe...</div>
+  <div class="loader-bar-wrap"><div class="loader-bar" id="loader-bar"></div></div>
+  <button class="btn-start" id="btn-start" onclick="startExperience()">✨ BẮT ĐẦU</button>
+</div>
 
-  <!-- Three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  
-  <!-- MediaPipe -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-  
-  <script>
-    // ============================================
-    // SIMPLE SMOOTHING (NO PREDICTION)
-    // ============================================
-    class SimpleSmoothing {
-      constructor(bufferSize = 3) {
-        this.buffer = [];
-        this.bufferSize = bufferSize;
-      }
-      
-      add(value) {
-        this.buffer.push(value);
-        if (this.buffer.length > this.bufferSize) {
-          this.buffer.shift();
-        }
-        
-        // Simple average
-        return this.buffer.reduce((a, b) => a + b) / this.buffer.length;
-      }
-      
-      reset() {
-        this.buffer = [];
-      }
+<!-- Galaxy canvas -->
+<canvas id="galaxy-canvas"></canvas>
+
+<!-- Camera feed -->
+<video id="cam-video" autoplay muted playsinline></video>
+<canvas id="hand-canvas"></canvas>
+
+<!-- Hand cursor -->
+<div id="hand-glow"></div>
+
+<!-- HUD -->
+<div id="hud">
+  <div>
+    <div class="hud-title">🌌 GALAXY CONTROL</div>
+    <div class="hud-sub">Hand Tracking · 3D Nebula</div>
+  </div>
+  <div id="stats-panel">
+    <div class="stat-row"><span class="stat-label">Azimuth</span><span class="stat-val" id="s-az">0°</span></div>
+    <div class="stat-row"><span class="stat-label">Elevation</span><span class="stat-val" id="s-el">25°</span></div>
+    <div class="stat-row"><span class="stat-label">Zoom</span><span class="stat-val" id="s-zoom">1.0x</span></div>
+    <div class="stat-row"><span class="stat-label">Gesture</span><span class="stat-val" id="s-gesture">—</span></div>
+    <div class="stat-row"><span class="stat-label">Confidence</span><span class="stat-val" id="s-conf">—</span></div>
+  </div>
+</div>
+
+<!-- FPS -->
+<div id="fps-badge">60 FPS</div>
+
+<!-- Gesture badge -->
+<div id="gesture-badge" id="gesture-badge"></div>
+
+<!-- Controls guide -->
+<div id="controls-guide">
+  <div class="guide-title">✦ Controls</div>
+  <div class="guide-row"><span class="guide-icon">↔️</span><span>Tay trái/phải → Xoay ngang</span></div>
+  <div class="guide-row"><span class="guide-icon">↕️</span><span>Tay lên/xuống → Góc nhìn</span></div>
+  <div class="guide-row"><span class="guide-icon">🤏</span><span>Véo ngón → Zoom</span></div>
+  <div class="guide-row"><span class="guide-icon">✊</span><span>Nắm tay → Xoay tự do</span></div>
+  <div class="guide-row"><span class="guide-icon">🖐️</span><span>Mở tay → Trôi nổi</span></div>
+  <div class="guide-row"><span class="guide-icon">👌</span><span>OK sign → Reset</span></div>
+</div>
+
+<!-- Three.js + MediaPipe -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ─── GLOBALS ───────────────────────────────────────────────────────────────
+let camera3D, scene, renderer, galaxyMesh, nebulaParticles, dustCloud;
+let azimuth = 0, elevation = 25, distance = 6;
+let targetAz = 0, targetEl = 25, targetDist = 6;
+let autoRotate = true;
+let handDetector = null, handResults = null;
+let lastGesture = null, gestureCooldown = 0;
+let prevHandX = null, prevHandY = null;
+let fpsArr = [], lastFpsTime = performance.now(), frameCount = 0;
+let started = false;
+let videoStream = null;
+let gestureTimer = null;
+let pinchStartDist = null, pinchStartZoom = null;
+
+const loaderBar = document.getElementById('loader-bar');
+const loadStatus = document.getElementById('load-status');
+
+// ─── THREE.JS GALAXY SETUP ─────────────────────────────────────────────────
+function initThree() {
+  const canvas = document.getElementById('galaxy-canvas');
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x020510);
+
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x020510, 0.025);
+
+  camera3D = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+  updateCamera();
+
+  buildGalaxy();
+  buildNebula();
+  buildStarField();
+  buildDustCloud();
+  buildNebulaClouds();
+
+  window.addEventListener('resize', onResize);
+}
+
+function buildGalaxy() {
+  // Spiral galaxy with multiple arms
+  const N = 80000;
+  const positions = new Float32Array(N * 3);
+  const colors = new Float32Array(N * 3);
+  const sizes = new Float32Array(N);
+
+  const arms = 3;
+  const spinFactor = 3.5;
+  const spread = 0.35;
+
+  for (let i = 0; i < N; i++) {
+    const armIndex = i % arms;
+    const armAngle = (armIndex / arms) * Math.PI * 2;
+    const r = Math.pow(Math.random(), 0.6) * 5.5;
+    const spin = r * spinFactor;
+    const angle = armAngle + spin + (Math.random() - 0.5) * spread * (r + 0.5);
+
+    const xSpread = (Math.random() - 0.5) * spread * (r * 0.4 + 0.3);
+    const ySpread = (Math.random() - 0.5) * 0.25 * Math.exp(-r * 0.4);
+    const zSpread = (Math.random() - 0.5) * spread * (r * 0.4 + 0.3);
+
+    positions[i * 3]     = Math.cos(angle) * r + xSpread;
+    positions[i * 3 + 1] = ySpread;
+    positions[i * 3 + 2] = Math.sin(angle) * r + zSpread;
+
+    // Color: core = warm white/yellow, arms = blue/purple, edges = pink/red
+    const t = r / 5.5;
+    let cr, cg, cb;
+    if (t < 0.2) {
+      // Core: warm white
+      cr = 1.0; cg = 0.9; cb = 0.85;
+    } else if (t < 0.5) {
+      // Middle: star blue
+      const f = (t - 0.2) / 0.3;
+      cr = 1.0 - f * 0.5; cg = 0.9 - f * 0.3; cb = 0.85 + f * 0.15;
+    } else if (t < 0.75) {
+      // Outer: purple/blue
+      const f = (t - 0.5) / 0.25;
+      cr = 0.5 - f * 0.2; cg = 0.6 - f * 0.35; cb = 1.0;
+    } else {
+      // Edge: pink nebula
+      const f = (t - 0.75) / 0.25;
+      cr = 0.3 + f * 0.6; cg = 0.25 - f * 0.05; cb = 1.0 - f * 0.5;
     }
-    
-    // ============================================
-    // CIRCULAR MOTION DETECTOR
-    // ============================================
-    class CircularMotionDetector {
-      constructor() {
-        this.positions = [];
-        this.maxHistory = 12;
+
+    // Vary brightness
+    const bright = 0.5 + Math.random() * 0.5;
+    colors[i * 3]     = cr * bright;
+    colors[i * 3 + 1] = cg * bright;
+    colors[i * 3 + 2] = cb * bright;
+
+    // Vary size — core stars bigger
+    sizes[i] = t < 0.15 ? (0.06 + Math.random() * 0.1) : (0.015 + Math.random() * 0.04);
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      time: { value: 0 },
+      pixelRatio: { value: renderer.getPixelRatio() }
+    },
+    vertexShader: `
+      attribute float size;
+      attribute vec3 color;
+      varying vec3 vColor;
+      varying float vDist;
+      uniform float time;
+      uniform float pixelRatio;
+
+      void main() {
+        vColor = color;
+        vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+        vDist = length(position.xz);
+        float twinkle = 0.85 + 0.15 * sin(time * 2.0 + position.x * 13.7 + position.z * 9.3);
+        gl_PointSize = size * pixelRatio * (300.0 / -mvPos.z) * twinkle;
+        gl_Position = projectionMatrix * mvPos;
       }
-      
-      addPosition(x, y) {
-        this.positions.push({ x, y, t: Date.now() });
-        if (this.positions.length > this.maxHistory) {
-          this.positions.shift();
-        }
+    `,
+    fragmentShader: `
+      varying vec3 vColor;
+      varying float vDist;
+
+      void main() {
+        vec2 uv = gl_PointCoord - 0.5;
+        float d = length(uv);
+        if (d > 0.5) discard;
+        float alpha = 1.0 - smoothstep(0.1, 0.5, d);
+        // Soft glow
+        float glow = exp(-d * 6.0) * 0.7;
+        vec3 col = vColor + glow * vec3(0.3, 0.3, 0.5);
+        gl_FragColor = vec4(col, alpha * 0.9);
       }
-      
-      detectCircularMotion() {
-        if (this.positions.length < 8) return { detected: false, direction: 0, speed: 0 };
-        
-        // Calculate center
-        let centerX = 0, centerY = 0;
-        for (let p of this.positions) {
-          centerX += p.x;
-          centerY += p.y;
-        }
-        centerX /= this.positions.length;
-        centerY /= this.positions.length;
-        
-        // Calculate angles
-        const angles = [];
-        for (let p of this.positions) {
-          const dx = p.x - centerX;
-          const dy = p.y - centerY;
-          const angle = Math.atan2(dy, dx);
-          angles.push(angle);
-        }
-        
-        // Check progression
-        let totalAngleChange = 0;
-        for (let i = 1; i < angles.length; i++) {
-          let diff = angles[i] - angles[i-1];
-          
-          // Normalize
-          while (diff > Math.PI) diff -= 2 * Math.PI;
-          while (diff < -Math.PI) diff += 2 * Math.PI;
-          
-          totalAngleChange += diff;
-        }
-        
-        const isCircular = Math.abs(totalAngleChange) > Math.PI / 2;
-        
-        // Check radius consistency
-        const radii = this.positions.map(p => {
-          const dx = p.x - centerX;
-          const dy = p.y - centerY;
-          return Math.sqrt(dx*dx + dy*dy);
-        });
-        
-        const avgRadius = radii.reduce((a,b) => a+b) / radii.length;
-        const radiusVariance = radii.reduce((sum, r) => sum + Math.pow(r - avgRadius, 2), 0) / radii.length;
-        
-        const isConsistentRadius = radiusVariance < 0.015;
-        
-        const detected = isCircular && isConsistentRadius && avgRadius > 0.05;
-        const direction = totalAngleChange > 0 ? 1 : -1;
-        const speed = Math.abs(totalAngleChange) / (angles.length - 1);
-        
-        return { detected, direction, speed };
+    `,
+    transparent: true,
+    depthWrite: false,
+    vertexColors: true,
+    blending: THREE.AdditiveBlending,
+  });
+
+  galaxyMesh = new THREE.Points(geo, mat);
+  scene.add(galaxyMesh);
+}
+
+function buildNebula() {
+  // Large glowing nebula clouds in the core
+  const N = 1200;
+  const positions = new Float32Array(N * 3);
+  const colors = new Float32Array(N * 3);
+  const sizes = new Float32Array(N);
+
+  for (let i = 0; i < N; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const r = Math.pow(Math.random(), 1.2) * 2.5;
+    positions[i * 3]     = Math.cos(angle) * r + (Math.random() - 0.5) * 0.8;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 0.4;
+    positions[i * 3 + 2] = Math.sin(angle) * r + (Math.random() - 0.5) * 0.8;
+
+    const t = Math.random();
+    if (t < 0.33) { colors[i*3]=0.55; colors[i*3+1]=0.15; colors[i*3+2]=0.9; }
+    else if (t < 0.66) { colors[i*3]=0.15; colors[i*3+1]=0.6; colors[i*3+2]=0.95; }
+    else { colors[i*3]=0.9; colors[i*3+1]=0.3; colors[i*3+2]=0.7; }
+
+    sizes[i] = 0.4 + Math.random() * 1.2;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { time: { value: 0 }, pixelRatio: { value: renderer.getPixelRatio() } },
+    vertexShader: `
+      attribute float size;
+      attribute vec3 color;
+      varying vec3 vColor;
+      uniform float time;
+      uniform float pixelRatio;
+      void main() {
+        vColor = color;
+        vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+        float pulse = 0.9 + 0.1 * sin(time * 0.8 + position.x * 5.0);
+        gl_PointSize = size * pixelRatio * (280.0 / -mvPos.z) * pulse;
+        gl_Position = projectionMatrix * mvPos;
       }
-      
-      reset() {
-        this.positions = [];
+    `,
+    fragmentShader: `
+      varying vec3 vColor;
+      void main() {
+        vec2 uv = gl_PointCoord - 0.5;
+        float d = length(uv);
+        if (d > 0.5) discard;
+        float alpha = exp(-d * 3.5) * 0.35;
+        gl_FragColor = vec4(vColor, alpha);
       }
-    }
-    
-    // ============================================
-    // GLOBAL VARIABLES
-    // ============================================
-    let scene, camera, renderer, tree;
-    
-    // ORBITAL CAMERA PARAMETERS
-    let targetAzimuth = 0;
-    let targetElevation = 45;
-    let targetDistance = 7;
-    
-    let currentAzimuth = 0;
-    let currentElevation = 45;
-    let currentDistance = 7;
-    
-    const TARGET_POSITION = new THREE.Vector3(0, 2.5, 0);
-    
-    let frameCount = 0;
-    let aiFrameCount = 0;
-    let lastTime = Date.now();
-    let lastAITime = Date.now();
-    let hands;
-    let ornaments = [];
-    let lights = [];
-    
-    // SIMPLE SMOOTHING (NO PREDICTION)
-    const smoothX = new SimpleSmoothing(4);
-    const smoothY = new SimpleSmoothing(4);
-    const smoothPinch = new SimpleSmoothing(3);
-    
-    // CIRCULAR MOTION DETECTION
-    const circularDetector = new CircularMotionDetector();
-    
-    const canvas = document.getElementById('canvas');
-    const video = document.getElementById('video');
-    const gestureTextEl = document.getElementById('gesture-text');
-    const detailsEl = document.getElementById('details');
-    const fpsEl = document.getElementById('fps');
-    const aiFpsEl = document.getElementById('aiFps');
-    const rotationTrailEl = document.getElementById('rotationTrail');
-    const loadingEl = document.getElementById('loading');
-    
-    // ============================================
-    // CAMERA POSITION CALCULATION
-    // ============================================
-    function updateCameraPosition() {
-      const azimuthRad = currentAzimuth * Math.PI / 180;
-      const elevationRad = currentElevation * Math.PI / 180;
-      
-      const x = TARGET_POSITION.x + currentDistance * Math.cos(elevationRad) * Math.sin(azimuthRad);
-      const y = TARGET_POSITION.y + currentDistance * Math.sin(elevationRad);
-      const z = TARGET_POSITION.z + currentDistance * Math.cos(elevationRad) * Math.cos(azimuthRad);
-      
-      camera.position.set(x, y, z);
-      camera.lookAt(TARGET_POSITION);
-      
-      // Update UI
-      detailsEl.innerHTML = `Azimuth: ${Math.round(currentAzimuth)}°<br>Elevation: ${Math.round(currentElevation)}°<br>Distance: ${currentDistance.toFixed(1)}m`;
-    }
-    
-    // ============================================
-    // RESET CAMERA
-    // ============================================
-    function resetCamera() {
-      targetAzimuth = 0;
-      targetElevation = 45;
-      targetDistance = 7;
-      
-      console.log('🎯 Camera reset');
-    }
-    
-    window.resetCamera = resetCamera;
-    
-    // ============================================
-    // INIT CAMERA
-    // ============================================
-    async function initCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: 'user',
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            frameRate: { ideal: 60 }
-          }
-        });
-        
-        video.srcObject = stream;
-        await video.play();
-        video.classList.add('active');
-        
-        console.log('✅ Camera initialized');
-        return true;
-      } catch (err) {
-        console.error('❌ Camera error:', err);
-        alert('Không thể truy cập camera.');
-        return false;
-      }
-    }
-    
-    // ============================================
-    // INIT MEDIAPIPE
-    // ============================================
-    async function initMediaPipe() {
-      try {
-        if (typeof Hands === 'undefined') {
-          throw new Error('MediaPipe not loaded');
-        }
-        
-        hands = new Hands({
-          locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-          }
-        });
-        
-        hands.setOptions({
-          maxNumHands: 1,
-          modelComplexity: 1,
-          minDetectionConfidence: 0.7,
-          minTrackingConfidence: 0.7,
-          selfieMode: true
-        });
-        
-        hands.onResults(onHandResults);
-        
-        // AI Processing at 30 FPS
-        let lastProcessTime = 0;
-        const AI_FPS = 30;
-        const AI_INTERVAL = 1000 / AI_FPS;
-        
-        const processFrame = async () => {
-          const now = performance.now();
-          
-          if (video.readyState === 4 && now - lastProcessTime >= AI_INTERVAL) {
-            await hands.send({ image: video });
-            lastProcessTime = now;
-            
-            // AI FPS counter
-            aiFrameCount++;
-            if (now - lastAITime > 1000) {
-              aiFpsEl.textContent = `AI: ${aiFrameCount}`;
-              aiFrameCount = 0;
-              lastAITime = now;
-            }
-          }
-          
-          requestAnimationFrame(processFrame);
-        };
-        
-        processFrame();
-        
-        console.log('✅ MediaPipe initialized');
-        return true;
-      } catch (err) {
-        console.error('❌ MediaPipe error:', err);
-        return false;
-      }
-    }
-    
-    // ============================================
-    // HAND RESULTS PROCESSING - DIRECT TRACKING
-    // ============================================
-    function onHandResults(results) {
-      if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-        updateGesture('idle', '✋ Không phát hiện tay');
-        circularDetector.reset();
-        smoothX.reset();
-        smoothY.reset();
-        smoothPinch.reset();
-        rotationTrailEl.classList.remove('active');
-        return;
-      }
-      
-      const landmarks = results.multiHandLandmarks[0];
-      
-      // Key points
-      const wrist = landmarks[0];
-      const thumbTip = landmarks[4];
-      const indexTip = landmarks[8];
-      const middleTip = landmarks[12];
-      const ringTip = landmarks[16];
-      const pinkyTip = landmarks[20];
-      
-      // Calculate distances
-      const dist = (p1, p2) => {
-        const dx = p1.x - p2.x;
-        const dy = p1.y - p2.y;
-        return Math.sqrt(dx * dx + dy * dy);
+    `,
+    transparent: true,
+    depthWrite: false,
+    vertexColors: true,
+    blending: THREE.AdditiveBlending,
+  });
+
+  nebulaParticles = new THREE.Points(geo, mat);
+  scene.add(nebulaParticles);
+}
+
+function buildStarField() {
+  // Background stars
+  const N = 5000;
+  const pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    const r = 40 + Math.random() * 60;
+    pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+    pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    pos[i*3+2] = r * Math.cos(phi);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({
+    color: 0xffffff, size: 0.08, transparent: true, opacity: 0.7,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  scene.add(new THREE.Points(geo, mat));
+}
+
+function buildDustCloud() {
+  const N = 3000;
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    const arm = Math.floor(Math.random() * 3);
+    const armA = (arm / 3) * Math.PI * 2;
+    const r = 0.5 + Math.pow(Math.random(), 0.5) * 5;
+    const spin = r * 3.5;
+    const angle = armA + spin + (Math.random() - 0.5) * 0.8;
+    pos[i*3]   = Math.cos(angle) * r + (Math.random()-0.5)*0.6;
+    pos[i*3+1] = (Math.random()-0.5) * 0.15;
+    pos[i*3+2] = Math.sin(angle) * r + (Math.random()-0.5)*0.6;
+    col[i*3]=0.25; col[i*3+1]=0.15; col[i*3+2]=0.45;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({
+    size: 0.18, transparent: true, opacity: 0.12,
+    vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  dustCloud = new THREE.Points(geo, mat);
+  scene.add(dustCloud);
+}
+
+function buildNebulaClouds() {
+  // Faint background nebula rings
+  const ring = new THREE.TorusGeometry(2.2, 0.35, 8, 60);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0x3b0fa0, transparent: true, opacity: 0.04,
+    side: THREE.DoubleSide, wireframe: true
+  });
+  const mesh = new THREE.Mesh(ring, mat);
+  mesh.rotation.x = Math.PI / 2;
+  scene.add(mesh);
+
+  const ring2 = new THREE.TorusGeometry(4.0, 0.2, 6, 80);
+  const mat2 = new THREE.MeshBasicMaterial({
+    color: 0x1a4a8a, transparent: true, opacity: 0.03,
+    side: THREE.DoubleSide, wireframe: true
+  });
+  const mesh2 = new THREE.Mesh(ring2, mat2);
+  mesh2.rotation.x = Math.PI / 2;
+  scene.add(mesh2);
+}
+
+function updateCamera() {
+  const azRad = azimuth * Math.PI / 180;
+  const elRad = elevation * Math.PI / 180;
+  const d = distance;
+  camera3D.position.set(
+    d * Math.cos(elRad) * Math.sin(azRad),
+    d * Math.sin(elRad),
+    d * Math.cos(elRad) * Math.cos(azRad)
+  );
+  camera3D.lookAt(0, 0, 0);
+}
+
+function onResize() {
+  camera3D.aspect = window.innerWidth / window.innerHeight;
+  camera3D.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// ─── MEDIAPIPE HANDS ───────────────────────────────────────────────────────
+async function loadMediaPipe() {
+  loadStatus.textContent = 'Tải MediaPipe Hands...';
+  loaderBar.style.width = '20%';
+
+  return new Promise((resolve, reject) => {
+    const script1 = document.createElement('script');
+    script1.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
+    script1.onload = () => {
+      const script2 = document.createElement('script');
+      script2.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
+      script2.onload = () => {
+        loaderBar.style.width = '60%';
+        loadStatus.textContent = 'Khởi tạo AI model...';
+        resolve();
       };
-      
-      const pinchDist = dist(thumbTip, indexTip);
-      
-      // SIMPLE SMOOTHING (NO PREDICTION)
-      const smoothedX = smoothX.add(wrist.x);
-      const smoothedY = smoothY.add(wrist.y);
-      const smoothedPinch = smoothPinch.add(pinchDist);
-      
-      // Add to circular detector
-      circularDetector.addPosition(smoothedX, smoothedY);
-      
-      // ============================================
-      // GESTURE DETECTION
-      // ============================================
-      
-      // 1. OK SIGN (Reset)
-      const okSignDist = dist(thumbTip, indexTip);
-      const isOkSign = okSignDist < 0.05 && 
-                       dist(middleTip, wrist) > 0.15 && 
-                       dist(ringTip, wrist) > 0.15 && 
-                       dist(pinkyTip, wrist) > 0.15;
-      
-      if (isOkSign) {
-        resetCamera();
-        updateGesture('reset', '👌 Reset camera');
-        return;
-      }
-      
-      // 2. PINCH (Zoom)
-      if (smoothedPinch < 0.12) {
-        const normalizedPinch = Math.max(0.02, Math.min(0.12, smoothedPinch));
-        targetDistance = 4 + (normalizedPinch / 0.12) * 8;
-        
-        updateGesture('zoom', `🔍 Zoom: ${targetDistance.toFixed(1)}m`);
-        return;
-      }
-      
-      // 3. CIRCULAR MOTION
-      const circularMotion = circularDetector.detectCircularMotion();
-      
-      if (circularMotion.detected && circularMotion.speed > 0.3) {
-        rotationTrailEl.classList.add('active');
-        
-        // Rotate azimuth
-        targetAzimuth += circularMotion.direction * circularMotion.speed * 200;
-        
-        // Normalize
-        while (targetAzimuth >= 360) targetAzimuth -= 360;
-        while (targetAzimuth < 0) targetAzimuth += 360;
-        
-        updateGesture('orbital', `🔄 Quay tròn: ${circularMotion.direction > 0 ? '↻' : '↺'}`);
-        return;
-      } else {
-        rotationTrailEl.classList.remove('active');
-      }
-      
-      // 4. LINEAR MOVEMENT
-      const centeredX = (smoothedX - 0.5) * 2;
-      const centeredY = smoothedY - 0.5;
-      
-      const DEADZONE_X = 0.15;
-      const DEADZONE_Y = 0.15;
-      
-      const AZIMUTH_SPEED = 2.5;
-      const ELEVATION_SPEED = 1.5;
-      
-      let gestureText = '';
-      
-      // Azimuth
-      if (Math.abs(centeredX) > DEADZONE_X) {
-        const speed = AZIMUTH_SPEED * Math.abs(centeredX);
-        targetAzimuth += centeredX * speed;
-        
-        while (targetAzimuth >= 360) targetAzimuth -= 360;
-        while (targetAzimuth < 0) targetAzimuth += 360;
-        
-        gestureText = centeredX < 0 ? '← Quay trái' : '→ Quay phải';
-      }
-      
-      // Elevation
-      if (Math.abs(centeredY) > DEADZONE_Y) {
-        const speed = ELEVATION_SPEED * Math.abs(centeredY);
-        targetElevation -= centeredY * speed;
-        
-        targetElevation = Math.max(5, Math.min(85, targetElevation));
-        
-        if (gestureText) {
-          gestureText += ' + ' + (centeredY < 0 ? '↑ Lên' : '↓ Xuống');
-        } else {
-          gestureText = centeredY < 0 ? '↑ Nhìn lên' : '↓ Nhìn xuống';
-        }
-      }
-      
-      if (!gestureText) {
-        gestureText = '✋ Giữ nguyên';
-      }
-      
-      updateGesture('control', gestureText);
-    }
-    
-    // ============================================
-    // UPDATE GESTURE UI
-    // ============================================
-    function updateGesture(type, text) {
-      gestureTextEl.textContent = text;
-    }
-    
-    // ============================================
-    // SCENE SETUP
-    // ============================================
-    function initScene() {
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0a1f2e);
-      scene.fog = new THREE.Fog(0x0a1f2e, 5, 20);
-      
-      const aspect = window.innerWidth / window.innerHeight;
-      camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
-      
-      updateCameraPosition();
-      
-      renderer = new THREE.WebGLRenderer({ 
-        canvas: canvas,
-        alpha: true,
-        antialias: true 
-      });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      
-      // Lights
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-      scene.add(ambientLight);
-      
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-      directionalLight.position.set(5, 10, 5);
-      directionalLight.castShadow = true;
-      scene.add(directionalLight);
-      
-      const topLight = new THREE.DirectionalLight(0xffffaa, 0.4);
-      topLight.position.set(0, 15, 0);
-      scene.add(topLight);
-      
-      const rimLight1 = new THREE.DirectionalLight(0x88ccff, 0.3);
-      rimLight1.position.set(-5, 5, -5);
-      scene.add(rimLight1);
-      
-      const rimLight2 = new THREE.DirectionalLight(0xff8888, 0.2);
-      rimLight2.position.set(5, 3, -5);
-      scene.add(rimLight2);
-      
-      createTree();
-      createSnow();
-      createGround();
-      createGrid();
-      
-      console.log('✅ Scene initialized');
-    }
-    
-    // ============================================
-    // CREATE TREE
-    // ============================================
-    function createTree() {
-      tree = new THREE.Group();
-      
-      // Trunk
-      const trunkGeo = new THREE.CylinderGeometry(0.22, 0.28, 1.2, 16);
-      const trunkMat = new THREE.MeshStandardMaterial({ 
-        color: 0x4a2511,
-        roughness: 0.9,
-        metalness: 0.1
-      });
-      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-      trunk.position.y = 0.6;
-      trunk.castShadow = true;
-      tree.add(trunk);
-      
-      // Foliage
-      const foliageColors = [0x0d5c2d, 0x0f6e35, 0x11803d, 0x139245];
-      const tierSizes = [
-        { radius: 1.4, height: 1.7, y: 1.7 },
-        { radius: 1.1, height: 1.4, y: 2.6 },
-        { radius: 0.8, height: 1.2, y: 3.4 },
-        { radius: 0.5, height: 0.9, y: 4.1 }
-      ];
-      
-      tierSizes.forEach((size, i) => {
-        const foliage = new THREE.Mesh(
-          new THREE.ConeGeometry(size.radius, size.height, 16),
-          new THREE.MeshStandardMaterial({ 
-            color: foliageColors[i],
-            roughness: 0.8,
-            metalness: 0.2
-          })
-        );
-        foliage.position.y = size.y;
-        foliage.castShadow = true;
-        tree.add(foliage);
-      });
-      
-      // Star
-      const starGeo = new THREE.IcosahedronGeometry(0.35, 1);
-      const starMat = new THREE.MeshStandardMaterial({ 
-        color: 0xffd700,
-        emissive: 0xffaa00,
-        emissiveIntensity: 1.5,
-        metalness: 0.9,
-        roughness: 0.1
-      });
-      const star = new THREE.Mesh(starGeo, starMat);
-      star.position.y = 4.9;
-      star.name = 'star';
-      tree.add(star);
-      
-      const starGlow = new THREE.PointLight(0xffd700, 2, 5);
-      starGlow.position.copy(star.position);
-      tree.add(starGlow);
-      
-      // Ornaments
-      const ornamentData = [
-        { color: 0xff0000, metalness: 0.9 },
-        { color: 0x0000ff, metalness: 0.7 },
-        { color: 0xffd700, metalness: 1.0 },
-        { color: 0xff1493, metalness: 0.6 },
-        { color: 0x00ff00, metalness: 0.5 },
-        { color: 0xff4500, metalness: 0.8 },
-        { color: 0x9370db, metalness: 0.7 },
-        { color: 0xff69b4, metalness: 0.6 }
-      ];
-      
-      ornaments = [];
-      
-      for (let i = 0; i < 24; i++) {
-        const data = ornamentData[i % ornamentData.length];
-        
-        const ornament = new THREE.Mesh(
-          new THREE.SphereGeometry(0.08 + Math.random() * 0.04, 16, 16),
-          new THREE.MeshStandardMaterial({
-            color: data.color,
-            metalness: data.metalness,
-            roughness: 0.2,
-            emissive: data.color,
-            emissiveIntensity: 0.4
-          })
-        );
-        
-        const tier = Math.floor(i / 6);
-        const angle = (i * 137.5) * Math.PI / 180;
-        const radius = 0.4 + Math.random() * 0.5 - tier * 0.12;
-        const height = 1.5 + tier * 0.8 + Math.random() * 0.4;
-        
-        ornament.position.set(
-          Math.cos(angle) * radius,
-          height,
-          Math.sin(angle) * radius
-        );
-        
-        ornament.castShadow = true;
-        tree.add(ornament);
-        ornaments.push(ornament);
-        
-        const ornamentLight = new THREE.PointLight(data.color, 0.5, 1);
-        ornamentLight.position.copy(ornament.position);
-        tree.add(ornamentLight);
-        lights.push(ornamentLight);
-      }
-      
-      const mainLight = new THREE.PointLight(0xffaa44, 3, 10);
-      mainLight.position.set(0, 2.5, 0);
-      tree.add(mainLight);
-      lights.push(mainLight);
-      
-      scene.add(tree);
-      
-      console.log('🎄 Tree created');
-    }
-    
-    // ============================================
-    // CREATE SNOW
-    // ============================================
-    function createSnow() {
-      const particleCount = 200;
-      const geometry = new THREE.BufferGeometry();
-      const positions = new Float32Array(particleCount * 3);
-      
-      for (let i = 0; i < particleCount; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * 25;
-        positions[i * 3 + 1] = Math.random() * 15;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 25;
-      }
-      
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      
-      const material = new THREE.PointsMaterial({
-        color: 0xffffff,
-        size: 0.12,
-        transparent: true,
-        opacity: 0.9,
-        sizeAttenuation: true
-      });
-      
-      const snow = new THREE.Points(geometry, material);
-      snow.name = 'snow';
-      scene.add(snow);
-      
-      console.log('❄️ Snow created');
-    }
-    
-    // ============================================
-    // CREATE GROUND
-    // ============================================
-    function createGround() {
-      const ground = new THREE.Mesh(
-        new THREE.CircleGeometry(15, 64),
-        new THREE.MeshStandardMaterial({ 
-          color: 0x1a3a4a,
-          roughness: 0.8
-        })
-      );
-      ground.rotation.x = -Math.PI / 2;
-      ground.receiveShadow = true;
-      scene.add(ground);
-    }
-    
-    // ============================================
-    // CREATE GRID
-    // ============================================
-    function createGrid() {
-      const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
-      gridHelper.position.y = 0.01;
-      scene.add(gridHelper);
-      
-      const axesHelper = new THREE.AxesHelper(3);
-      axesHelper.position.copy(TARGET_POSITION);
-      scene.add(axesHelper);
-    }
-    
-    // ============================================
-    // ANIMATION
-    // ============================================
-    function animate() {
-      requestAnimationFrame(animate);
-      
-      // FPS counter
-      frameCount++;
-      const now = Date.now();
-      if (now - lastTime > 1000) {
-        fpsEl.textContent = frameCount + ' FPS';
-        frameCount = 0;
-        lastTime = now;
-      }
-      
-      // SMOOTH INTERPOLATION
-      const ORBIT_SPEED = 0.15;
-      
-      currentAzimuth += (targetAzimuth - currentAzimuth) * ORBIT_SPEED;
-      currentElevation += (targetElevation - currentElevation) * ORBIT_SPEED;
-      currentDistance += (targetDistance - currentDistance) * ORBIT_SPEED;
-      
-      // Normalize azimuth
-      while (currentAzimuth >= 360) currentAzimuth -= 360;
-      while (currentAzimuth < 0) currentAzimuth += 360;
-      
-      updateCameraPosition();
-      
-      // Rotate star
-      const star = tree.getObjectByName('star');
-      if (star) {
-        star.rotation.y += 0.03;
-        star.rotation.z = Math.sin(now * 0.001) * 0.2;
-      }
-      
-      // Pulsating lights
-      lights.forEach((light, i) => {
-        const pulse = Math.sin(now * 0.002 + i * 0.5) * 0.5 + 0.5;
-        light.intensity = 0.5 + pulse * 1;
-      });
-      
-      // Sparkle ornaments
-      ornaments.forEach((ornament, i) => {
-        const sparkle = Math.sin(now * 0.003 + i) * 0.5 + 0.5;
-        ornament.material.emissiveIntensity = 0.3 + sparkle * 0.5;
-      });
-      
-      // Animate snow
-      const snow = scene.getObjectByName('snow');
-      if (snow) {
-        const positions = snow.geometry.attributes.position.array;
-        for (let i = 0; i < positions.length; i += 3) {
-          positions[i + 1] -= 0.025;
-          positions[i] += Math.sin(now * 0.001 + i) * 0.001;
-          
-          if (positions[i + 1] < 0) {
-            positions[i + 1] = 15;
-            positions[i] = (Math.random() - 0.5) * 25;
-            positions[i + 2] = (Math.random() - 0.5) * 25;
-          }
-        }
-        snow.geometry.attributes.position.needsUpdate = true;
-      }
-      
-      renderer.render(scene, camera);
-    }
-    
-    // ============================================
-    // UI
-    // ============================================
-    function hideInstructions() {
-      document.getElementById('instructions').classList.add('hide');
-    }
-    
-    window.hideInstructions = hideInstructions;
-    
-    setTimeout(hideInstructions, 18000);
-    
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      script2.onerror = reject;
+      document.head.appendChild(script2);
+    };
+    script1.onerror = reject;
+    document.head.appendChild(script1);
+  });
+}
+
+async function initHandTracking() {
+  const video = document.getElementById('cam-video');
+
+  handDetector = new Hands({
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+  });
+
+  handDetector.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.65,
+    minTrackingConfidence: 0.55
+  });
+
+  handDetector.onResults(onHandResults);
+
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 320, height: 240, facingMode: 'user', frameRate: { ideal: 30 } }
     });
-    
-    // ============================================
-    // INIT
-    // ============================================
-    async function init() {
-      initScene();
-      
-      const cameraOK = await initCamera();
-      if (!cameraOK) {
-        loadingEl.innerHTML = '<div style="color:white;text-align:center;padding:40px;"><h2 style="color:#f44;">❌ Lỗi Camera</h2><p style="margin:20px 0;">Vui lòng cho phép truy cập camera</p><button onclick="location.reload()" style="padding:12px 24px;">Thử lại</button></div>';
-        return;
-      }
-      
-      const mpOK = await initMediaPipe();
-      if (!mpOK) {
-        loadingEl.innerHTML = '<div style="color:white;text-align:center;padding:40px;"><h2 style="color:#fa0;">⚠️ MediaPipe Failed</h2><p style="margin:20px 0;">Không thể khởi động AI</p><button onclick="location.reload()" style="padding:12px 24px;">Thử lại</button></div>';
-        return;
-      }
-      
-      loadingEl.classList.add('hide');
-      updateGesture('idle', '✋ Di chuyển tay để quay camera 360°');
-      animate();
-      
-      console.log('🚀 360° ORBITAL CAMERA - DIRECT TRACKING');
+    video.srcObject = videoStream;
+    await video.play();
+
+    loaderBar.style.width = '90%';
+    loadStatus.textContent = 'Camera sẵn sàng!';
+
+    const mpCamera = new Camera(video, {
+      onFrame: async () => {
+        if (handDetector) await handDetector.send({ image: video });
+      },
+      width: 320, height: 240
+    });
+    mpCamera.start();
+  } catch (e) {
+    loadStatus.textContent = '⚠️ Không thể truy cập camera';
+    throw e;
+  }
+}
+
+// ─── GESTURE RECOGNITION ───────────────────────────────────────────────────
+function dist2D(a, b) {
+  return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2);
+}
+
+function recognizeGesture(lm) {
+  // Landmark indices
+  const WRIST = lm[0], THUMB_TIP = lm[4], INDEX_TIP = lm[8],
+        MIDDLE_TIP = lm[12], RING_TIP = lm[16], PINKY_TIP = lm[20],
+        INDEX_MCP = lm[5], MIDDLE_MCP = lm[9], RING_MCP = lm[13], PINKY_MCP = lm[17],
+        THUMB_IP = lm[3], THUMB_MCP = lm[2],
+        INDEX_PIP = lm[6], MIDDLE_PIP = lm[10];
+
+  // Finger extended checks (tip above pip relative to wrist)
+  const fingerUp = (tip, pip) => tip.y < pip.y;
+  const thumbOut = THUMB_TIP.x < THUMB_IP.x; // left hand mirrored
+
+  const indexUp  = fingerUp(INDEX_TIP,  lm[6]);
+  const middleUp = fingerUp(MIDDLE_TIP, lm[10]);
+  const ringUp   = fingerUp(RING_TIP,   lm[14]);
+  const pinkyUp  = fingerUp(PINKY_TIP,  lm[18]);
+
+  const allFingersUp = indexUp && middleUp && ringUp && pinkyUp;
+  const allFingersDown = !indexUp && !middleUp && !ringUp && !pinkyUp;
+
+  // Pinch: thumb + index close
+  const pinchDist = dist2D(THUMB_TIP, INDEX_TIP);
+  const handSize  = dist2D(WRIST, MIDDLE_MCP);
+  const isPinch   = pinchDist < handSize * 0.3;
+
+  // OK sign: thumb-index circle + other fingers up
+  const isOK = isPinch && middleUp && ringUp && pinkyUp;
+
+  // Fist
+  const isFist = allFingersDown && !isPinch;
+
+  // Open palm
+  const isOpen = allFingersUp;
+
+  // Point up: only index up
+  const isPoint = indexUp && !middleUp && !ringUp && !pinkyUp;
+
+  // Peace / V: index + middle up
+  const isPeace = indexUp && middleUp && !ringUp && !pinkyUp;
+
+  if (isOK) return { name: 'OK', icon: '👌', pinchDist, handSize };
+  if (isFist) return { name: 'FIST', icon: '✊', pinchDist, handSize };
+  if (isPinch) return { name: 'PINCH', icon: '🤏', pinchDist, handSize };
+  if (isOpen) return { name: 'OPEN', icon: '🖐️', pinchDist, handSize };
+  if (isPeace) return { name: 'PEACE', icon: '✌️', pinchDist, handSize };
+  if (isPoint) return { name: 'POINT', icon: '👆', pinchDist, handSize };
+  return { name: 'NEUTRAL', icon: '✋', pinchDist, handSize };
+}
+
+function onHandResults(results) {
+  handResults = results;
+
+  const hCanvas = document.getElementById('hand-canvas');
+  const ctx = hCanvas.getContext('2d');
+  hCanvas.width = 200; hCanvas.height = 130;
+  ctx.clearRect(0, 0, 200, 130);
+
+  const hGlow = document.getElementById('hand-glow');
+
+  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+    prevHandX = null; prevHandY = null;
+    pinchStartDist = null;
+    hGlow.style.display = 'none';
+    document.getElementById('s-gesture').textContent = '—';
+    document.getElementById('s-conf').textContent = '—';
+    autoRotate = true;
+    return;
+  }
+
+  autoRotate = false;
+  const lm = results.multiHandLandmarks[0];
+  const gesture = recognizeGesture(lm);
+
+  // Draw skeleton on mini-canvas
+  drawHandSkeleton(ctx, lm, 200, 130, gesture);
+
+  // Wrist position (mirrored)
+  const wx = (1 - lm[0].x) * window.innerWidth;
+  const wy = lm[0].y * window.innerHeight;
+  hGlow.style.display = 'block';
+  hGlow.style.left = wx + 'px';
+  hGlow.style.top  = wy + 'px';
+
+  // Confidence from wrist visibility
+  const conf = results.multiHandWorldLandmarks?.[0]?.[0]?.visibility ?? 0.9;
+  document.getElementById('s-conf').textContent = Math.round(conf * 100) + '%';
+  document.getElementById('s-gesture').textContent = gesture.icon + ' ' + gesture.name;
+
+  // Hand center
+  const cx = (1 - lm[9].x); // normalized 0-1, mirrored
+  const cy = lm[9].y;
+
+  gestureCooldown = Math.max(0, gestureCooldown - 1);
+
+  // Apply gestures
+  if (gesture.name === 'OK' && gestureCooldown === 0) {
+    // Reset camera
+    targetAz = 0; targetEl = 25; targetDist = 6;
+    showGestureBadge('👌 RESET CAMERA');
+    gestureCooldown = 40;
+    pinchStartDist = null;
+  } else if (gesture.name === 'PINCH') {
+    // Zoom via pinch distance change
+    const relDist = gesture.pinchDist / gesture.handSize;
+    if (pinchStartDist === null) {
+      pinchStartDist = relDist;
+      pinchStartZoom = targetDist;
+    } else {
+      const delta = (pinchStartDist - relDist) * 15;
+      targetDist = Math.max(2.5, Math.min(14, pinchStartZoom + delta));
     }
-    
-    init();
-  </script>
+    showGestureBadge('🤏 ZOOM ' + targetDist.toFixed(1) + 'x');
+  } else {
+    pinchStartDist = null;
+
+    if (gesture.name === 'FIST' || gesture.name === 'POINT') {
+      // Orbital drag
+      if (prevHandX !== null) {
+        const dx = (cx - prevHandX) * 180;
+        const dy = (cy - prevHandY) * 120;
+        targetAz  += dx * 2.5;
+        targetEl = Math.max(-85, Math.min(85, targetEl - dy * 2.0));
+      }
+    } else if (gesture.name === 'OPEN') {
+      // Float/drift — gentle orbit
+      targetAz += 0.4;
+    } else if (gesture.name === 'PEACE') {
+      // Speed orbit
+      targetAz += 1.2;
+      showGestureBadge('✌️ TURBO ORBIT');
+    } else {
+      // Default: use hand position for gentle camera guide
+      if (prevHandX !== null) {
+        const dx = (cx - prevHandX) * 120;
+        const dy = (cy - prevHandY) * 80;
+        targetAz  += dx * 1.5;
+        targetEl = Math.max(-85, Math.min(85, targetEl - dy * 1.5));
+      }
+    }
+  }
+
+  prevHandX = cx;
+  prevHandY = cy;
+}
+
+function drawHandSkeleton(ctx, lm, w, h, gesture) {
+  const CONNECTIONS = [
+    [0,1],[1,2],[2,3],[3,4], // thumb
+    [0,5],[5,6],[6,7],[7,8], // index
+    [0,9],[9,10],[10,11],[11,12], // middle
+    [0,13],[13,14],[14,15],[15,16], // ring
+    [0,17],[17,18],[18,19],[19,20], // pinky
+    [5,9],[9,13],[13,17]  // palm
+  ];
+
+  const px = lm.map(p => [(1-p.x)*w, p.y*h]);
+
+  // Skeleton lines
+  ctx.strokeStyle = 'rgba(56,189,248,0.5)';
+  ctx.lineWidth = 1.5;
+  CONNECTIONS.forEach(([a,b]) => {
+    ctx.beginPath();
+    ctx.moveTo(px[a][0], px[a][1]);
+    ctx.lineTo(px[b][0], px[b][1]);
+    ctx.stroke();
+  });
+
+  // Joints
+  px.forEach(([x, y], i) => {
+    const isTip = [4,8,12,16,20].includes(i);
+    ctx.beginPath();
+    ctx.arc(x, y, isTip ? 3.5 : 2, 0, Math.PI*2);
+    ctx.fillStyle = isTip ? '#f472b6' : '#38bdf8';
+    ctx.fill();
+  });
+}
+
+function showGestureBadge(text) {
+  const badge = document.getElementById('gesture-badge');
+  badge.textContent = text;
+  badge.classList.add('show');
+  clearTimeout(gestureTimer);
+  gestureTimer = setTimeout(() => badge.classList.remove('show'), 1800);
+}
+
+// ─── RENDER LOOP ───────────────────────────────────────────────────────────
+let time = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  time += 0.008;
+
+  // FPS
+  frameCount++;
+  const now = performance.now();
+  if (now - lastFpsTime > 1000) {
+    const fps = Math.round(frameCount * 1000 / (now - lastFpsTime));
+    document.getElementById('fps-badge').textContent = fps + ' FPS';
+    frameCount = 0;
+    lastFpsTime = now;
+  }
+
+  // Auto rotate when no hand
+  if (autoRotate) targetAz += 0.08;
+
+  // Smooth camera interpolation
+  azimuth  += (targetAz  - azimuth)  * 0.06;
+  elevation += (targetEl  - elevation) * 0.06;
+  distance  += (targetDist - distance) * 0.06;
+
+  updateCamera();
+
+  // Update HUD
+  document.getElementById('s-az').textContent = Math.round(azimuth % 360) + '°';
+  document.getElementById('s-el').textContent = Math.round(elevation) + '°';
+  document.getElementById('s-zoom').textContent = (6 / distance).toFixed(1) + 'x';
+
+  // Animate galaxy
+  if (galaxyMesh) {
+    galaxyMesh.material.uniforms.time.value = time;
+    galaxyMesh.rotation.y = time * 0.05;
+  }
+  if (nebulaParticles) {
+    nebulaParticles.material.uniforms.time.value = time;
+    nebulaParticles.rotation.y = time * 0.03;
+  }
+  if (dustCloud) dustCloud.rotation.y = -time * 0.02;
+
+  renderer.render(scene, camera3D);
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+async function init() {
+  initThree();
+  animate();
+
+  try {
+    await loadMediaPipe();
+    loaderBar.style.width = '80%';
+    loadStatus.textContent = 'Sẵn sàng! Nhấn để bắt đầu';
+    document.getElementById('btn-start').style.display = 'block';
+  } catch (e) {
+    loadStatus.textContent = '⚠️ Lỗi tải MediaPipe: ' + e.message;
+    document.getElementById('btn-start').style.display = 'block';
+    document.getElementById('btn-start').textContent = 'Tiếp tục không có tay';
+  }
+}
+
+async function startExperience() {
+  loaderBar.style.width = '85%';
+  loadStatus.textContent = 'Đang khởi động camera...';
+
+  try {
+    await initHandTracking();
+    loaderBar.style.width = '100%';
+    loadStatus.textContent = '✨ Thiên hà sẵn sàng!';
+    await new Promise(r => setTimeout(r, 600));
+    document.getElementById('loading').classList.add('hidden');
+    showGestureBadge('🌌 THIÊN HÀ ĐÃ SẴN SÀNG');
+  } catch (e) {
+    // Start without camera
+    document.getElementById('loading').classList.add('hidden');
+    showGestureBadge('⚠️ Không có camera — chế độ xem');
+  }
+}
+
+init();
+</script>
 </body>
 </html>
