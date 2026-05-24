@@ -11,14 +11,6 @@
 
 :root {
   --cosmic-dark: #00020a;
-  --core-white: #fff8f0;
-  --core-pink: #ffb3c6;
-  --arm-red: #e8446a;
-  --arm-pink: #d63a8a;
-  --mid-purple: #8b22d4;
-  --outer-blue: #2255c8;
-  --deep-blue: #0d1b6e;
-  --nebula-cloud: #3a1a7a;
   --glow-cyan: #22d3ee;
   --text-dim: rgba(180,190,210,0.7);
 }
@@ -32,250 +24,114 @@ body {
   width: 100vw;
 }
 
-#galaxy-canvas {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-}
+#galaxy-canvas { position: fixed; inset: 0; z-index: 1; }
 
 #cam-video {
-  position: fixed;
-  bottom: 16px;
-  left: 16px;
-  width: 200px;
-  height: 130px;
-  border-radius: 12px;
+  position: fixed; bottom: 16px; left: 16px;
+  width: 200px; height: 130px; border-radius: 12px;
   border: 1px solid rgba(56,189,248,0.3);
-  object-fit: cover;
-  transform: scaleX(-1);
-  z-index: 10;
-  opacity: 0.85;
+  object-fit: cover; transform: scaleX(-1);
+  z-index: 10; opacity: 0.85;
 }
 
 #hand-canvas {
-  position: fixed;
-  bottom: 16px;
-  left: 16px;
-  width: 200px;
-  height: 130px;
-  border-radius: 12px;
-  z-index: 11;
-  pointer-events: none;
+  position: fixed; bottom: 16px; left: 16px;
+  width: 200px; height: 130px; border-radius: 12px;
+  z-index: 11; pointer-events: none;
 }
 
 #hud {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 20;
-  padding: 16px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+  padding: 16px 20px; display: flex;
+  justify-content: space-between; align-items: flex-start;
   background: linear-gradient(to bottom, rgba(0,2,10,0.9) 0%, transparent 100%);
 }
 
 .hud-title {
-  font-family: 'Orbitron', monospace;
-  font-weight: 900;
+  font-family: 'Orbitron', monospace; font-weight: 900;
   font-size: clamp(14px, 2.5vw, 22px);
   background: linear-gradient(135deg, #ff9de2, #c084fc, #60a5fa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   letter-spacing: 2px;
 }
 
-.hud-sub {
-  font-size: 11px;
-  color: var(--text-dim);
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  margin-top: 2px;
-}
+.hud-sub { font-size: 11px; color: var(--text-dim); letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; }
 
 #stats-panel {
-  background: rgba(0,2,10,0.7);
-  border: 1px solid rgba(140,80,255,0.25);
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 12px;
-  font-family: 'Orbitron', monospace;
-  min-width: 160px;
-  backdrop-filter: blur(8px);
+  background: rgba(0,2,10,0.7); border: 1px solid rgba(140,80,255,0.25);
+  border-radius: 10px; padding: 10px 14px; font-size: 12px;
+  font-family: 'Orbitron', monospace; min-width: 160px; backdrop-filter: blur(8px);
 }
 
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-
+.stat-row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
 .stat-label { color: var(--text-dim); }
 .stat-val { color: #c084fc; font-weight: 700; }
 
 #gesture-badge {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 30;
-  font-family: 'Orbitron', monospace;
-  font-size: clamp(14px, 3vw, 20px);
-  font-weight: 700;
-  padding: 10px 24px;
-  border-radius: 30px;
-  background: rgba(80,20,160,0.4);
-  border: 1px solid rgba(160,80,255,0.6);
-  backdrop-filter: blur(12px);
-  color: #e2e8f0;
-  letter-spacing: 2px;
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-  text-align: center;
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 30; font-family: 'Orbitron', monospace;
+  font-size: clamp(14px, 3vw, 20px); font-weight: 700;
+  padding: 10px 24px; border-radius: 30px;
+  background: rgba(80,20,160,0.4); border: 1px solid rgba(160,80,255,0.6);
+  backdrop-filter: blur(12px); color: #e2e8f0;
+  letter-spacing: 2px; opacity: 0; transition: opacity 0.3s;
+  pointer-events: none; text-align: center;
 }
-
 #gesture-badge.show { opacity: 1; }
 
 #controls-guide {
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
-  z-index: 20;
-  background: rgba(0,2,10,0.75);
-  border: 1px solid rgba(140,80,255,0.2);
-  border-radius: 12px;
-  padding: 12px 16px;
-  font-size: 12px;
-  backdrop-filter: blur(8px);
-  max-width: 240px;
+  position: fixed; bottom: 16px; right: 16px; z-index: 20;
+  background: rgba(0,2,10,0.75); border: 1px solid rgba(140,80,255,0.2);
+  border-radius: 12px; padding: 12px 16px; font-size: 12px;
+  backdrop-filter: blur(8px); max-width: 240px;
 }
-
-.guide-title {
-  font-family: 'Orbitron', monospace;
-  font-size: 10px;
-  color: #c084fc;
-  letter-spacing: 2px;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-}
-
-.guide-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 5px;
-  color: var(--text-dim);
-  font-size: 11px;
-}
-
-.guide-icon {
-  font-size: 16px;
-  width: 22px;
-  text-align: center;
-  flex-shrink: 0;
-}
+.guide-title { font-family: 'Orbitron', monospace; font-size: 10px; color: #c084fc; letter-spacing: 2px; margin-bottom: 8px; text-transform: uppercase; }
+.guide-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; color: var(--text-dim); font-size: 11px; }
+.guide-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
 
 #loading {
-  position: fixed;
-  inset: 0;
-  background: var(--cosmic-dark);
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  transition: opacity 0.8s;
+  position: fixed; inset: 0; background: var(--cosmic-dark); z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 20px; transition: opacity 0.8s;
 }
-
 #loading.hidden { opacity: 0; pointer-events: none; }
 
 .loader-title {
-  font-family: 'Orbitron', monospace;
-  font-size: clamp(18px, 4vw, 32px);
-  font-weight: 900;
+  font-family: 'Orbitron', monospace; font-size: clamp(18px, 4vw, 32px); font-weight: 900;
   background: linear-gradient(135deg, #ff9de2, #c084fc, #60a5fa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-align: center;
-  letter-spacing: 3px;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  text-align: center; letter-spacing: 3px;
 }
-
-.loader-status {
-  font-size: 14px;
-  color: var(--text-dim);
-  letter-spacing: 2px;
-  text-align: center;
-}
-
-.loader-bar-wrap {
-  width: 260px;
-  height: 3px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
+.loader-status { font-size: 14px; color: var(--text-dim); letter-spacing: 2px; text-align: center; }
+.loader-bar-wrap { width: 260px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
 .loader-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #c084fc, #f472b6);
-  width: 0%;
-  border-radius: 3px;
-  transition: width 0.4s;
+  height: 100%; background: linear-gradient(90deg, #c084fc, #f472b6);
+  width: 0%; border-radius: 3px; transition: width 0.4s;
   animation: barPulse 2s ease-in-out infinite;
 }
-
-@keyframes barPulse {
-  0%,100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
+@keyframes barPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
 .btn-start {
-  display: none;
-  font-family: 'Orbitron', monospace;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  padding: 14px 36px;
-  border-radius: 50px;
-  border: 1px solid #c084fc;
-  background: rgba(192,132,252,0.12);
-  color: #c084fc;
-  cursor: pointer;
-  transition: all 0.3s;
+  display: none; font-family: 'Orbitron', monospace; font-size: 14px;
+  font-weight: 700; letter-spacing: 3px; padding: 14px 36px; border-radius: 50px;
+  border: 1px solid #c084fc; background: rgba(192,132,252,0.12); color: #c084fc;
+  cursor: pointer; transition: all 0.3s;
 }
-
-.btn-start:hover {
-  background: rgba(192,132,252,0.25);
-  box-shadow: 0 0 30px rgba(192,132,252,0.4);
-}
+.btn-start:hover { background: rgba(192,132,252,0.25); box-shadow: 0 0 30px rgba(192,132,252,0.4); }
 
 #fps-badge {
-  position: fixed;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 25;
-  font-family: 'Orbitron', monospace;
-  font-size: 11px;
-  color: rgba(192,132,252,0.5);
-  letter-spacing: 2px;
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 25; font-family: 'Orbitron', monospace; font-size: 11px;
+  color: rgba(192,132,252,0.5); letter-spacing: 2px;
 }
 
 #hand-glow {
-  position: fixed;
-  pointer-events: none;
-  z-index: 15;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
+  position: fixed; pointer-events: none; z-index: 15;
+  width: 60px; height: 60px; border-radius: 50%;
   background: radial-gradient(circle, rgba(192,132,252,0.3) 0%, transparent 70%);
   border: 1px solid rgba(192,132,252,0.4);
-  transform: translate(-50%, -50%);
-  transition: opacity 0.2s;
-  opacity: 0;
-  display: none;
+  transform: translate(-50%, -50%); transition: opacity 0.2s;
+  opacity: 0; display: none;
 }
 </style>
 </head>
@@ -328,16 +184,16 @@ let azimuth = 0, elevation = 25, distance = 6;
 let targetAz = 0, targetEl = 25, targetDist = 6;
 let autoRotate = true;
 let handDetector = null;
-let lastGesture = null, gestureCooldown = 0;
+let gestureCooldown = 0;
 let prevHandX = null, prevHandY = null;
 let frameCount = 0, lastFpsTime = performance.now();
-let started = false;
-let videoStream = null;
 let gestureTimer = null;
-// Single-hand pinch zoom
-let pinchStartDist = null, pinchStartZoom = null;
-// Two-hand spread zoom
-let twoHandStartDist = null, twoHandStartZoom = null;
+let videoStream = null;
+
+// Single-hand pinch zoom state
+let pinchActive = false, pinchStartRelDist = null, pinchStartZoomDist = null;
+// Two-hand spread zoom state
+let twoHandActive = false, twoHandStartDist = null, twoHandStartZoomDist = null;
 
 const loaderBar = document.getElementById('loader-bar');
 const loadStatus = document.getElementById('load-status');
@@ -366,66 +222,35 @@ function initThree() {
 }
 
 function buildGalaxy() {
-  // Dải sao xoắn ốc — màu theo ảnh model:
-  // lõi: trắng ấm → hồng/đỏ → tím → xanh dương → viền tím đậm
   const N = 100000;
   const positions = new Float32Array(N * 3);
-  const colors = new Float32Array(N * 3);
-  const sizes = new Float32Array(N);
-
-  const arms = 4;
-  const spinFactor = 4.0;
-  const spread = 0.3;
+  const colors    = new Float32Array(N * 3);
+  const sizes     = new Float32Array(N);
+  const arms = 4, spinFactor = 4.0, spread = 0.3;
 
   for (let i = 0; i < N; i++) {
-    const armIdx = i % arms;
+    const armIdx   = i % arms;
     const armAngle = (armIdx / arms) * Math.PI * 2;
-    const r = Math.pow(Math.random(), 0.55) * 5.8;
-    const spin = r * spinFactor;
-    const angle = armAngle + spin + (Math.random() - 0.5) * spread * (r * 0.5 + 0.5);
+    const r        = Math.pow(Math.random(), 0.55) * 5.8;
+    const spin     = r * spinFactor;
+    const angle    = armAngle + spin + (Math.random() - 0.5) * spread * (r * 0.5 + 0.5);
 
-    const xSp = (Math.random() - 0.5) * spread * (r * 0.45 + 0.3);
-    const ySp = (Math.random() - 0.5) * 0.22 * Math.exp(-r * 0.5);
-    const zSp = (Math.random() - 0.5) * spread * (r * 0.45 + 0.3);
-
-    positions[i*3]   = Math.cos(angle) * r + xSp;
-    positions[i*3+1] = ySp;
-    positions[i*3+2] = Math.sin(angle) * r + zSp;
+    positions[i*3]   = Math.cos(angle) * r + (Math.random()-0.5) * spread * (r*0.45+0.3);
+    positions[i*3+1] = (Math.random()-0.5) * 0.22 * Math.exp(-r * 0.5);
+    positions[i*3+2] = Math.sin(angle) * r + (Math.random()-0.5) * spread * (r*0.45+0.3);
 
     const t = r / 5.8;
     let cr, cg, cb;
-
-    if (t < 0.08) {
-      // Lõi: trắng sáng ấm
-      cr = 1.0; cg = 0.97; cb = 0.92;
-    } else if (t < 0.2) {
-      // Vùng trong: trắng → hồng nhạt
-      const f = (t - 0.08) / 0.12;
-      cr = 1.0; cg = 0.97 - f * 0.15; cb = 0.92 - f * 0.3;
-    } else if (t < 0.38) {
-      // Hồng → đỏ hồng (như ảnh)
-      const f = (t - 0.2) / 0.18;
-      cr = 1.0 - f * 0.05; cg = 0.82 - f * 0.35; cb = 0.62 - f * 0.25;
-    } else if (t < 0.55) {
-      // Đỏ hồng → tím
-      const f = (t - 0.38) / 0.17;
-      cr = 0.95 - f * 0.35; cg = 0.47 - f * 0.2; cb = 0.37 + f * 0.45;
-    } else if (t < 0.72) {
-      // Tím → xanh tím
-      const f = (t - 0.55) / 0.17;
-      cr = 0.60 - f * 0.3; cg = 0.27 - f * 0.05; cb = 0.82 + f * 0.1;
-    } else {
-      // Viền: xanh tím → xanh đậm
-      const f = (t - 0.72) / 0.28;
-      cr = 0.30 - f * 0.18; cg = 0.22 + f * 0.05; cb = 0.92 - f * 0.25;
-    }
+    if      (t < 0.08) { cr=1.0;  cg=0.97; cb=0.92; }
+    else if (t < 0.20) { const f=(t-0.08)/0.12; cr=1.0; cg=0.97-f*0.15; cb=0.92-f*0.3; }
+    else if (t < 0.38) { const f=(t-0.20)/0.18; cr=1.0-f*0.05; cg=0.82-f*0.35; cb=0.62-f*0.25; }
+    else if (t < 0.55) { const f=(t-0.38)/0.17; cr=0.95-f*0.35; cg=0.47-f*0.2; cb=0.37+f*0.45; }
+    else if (t < 0.72) { const f=(t-0.55)/0.17; cr=0.60-f*0.3; cg=0.27-f*0.05; cb=0.82+f*0.1; }
+    else               { const f=(t-0.72)/0.28; cr=0.30-f*0.18; cg=0.22+f*0.05; cb=0.92-f*0.25; }
 
     const bright = 0.45 + Math.random() * 0.55;
-    colors[i*3]   = cr * bright;
-    colors[i*3+1] = cg * bright;
-    colors[i*3+2] = cb * bright;
-
-    sizes[i] = t < 0.12 ? (0.07 + Math.random() * 0.12) : (0.012 + Math.random() * 0.038);
+    colors[i*3]=cr*bright; colors[i*3+1]=cg*bright; colors[i*3+2]=cb*bright;
+    sizes[i] = t < 0.12 ? (0.07 + Math.random()*0.12) : (0.012 + Math.random()*0.038);
   }
 
   const geo = new THREE.BufferGeometry();
@@ -434,40 +259,27 @@ function buildGalaxy() {
   geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
 
   const mat = new THREE.ShaderMaterial({
-    uniforms: {
-      time: { value: 0 },
-      pixelRatio: { value: renderer.getPixelRatio() }
-    },
+    uniforms: { time: { value: 0 }, pixelRatio: { value: renderer.getPixelRatio() } },
     vertexShader: `
-      attribute float size;
-      attribute vec3 color;
-      varying vec3 vColor;
-      uniform float time;
-      uniform float pixelRatio;
+      attribute float size; attribute vec3 color; varying vec3 vColor;
+      uniform float time, pixelRatio;
       void main() {
         vColor = color;
         vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-        float twinkle = 0.82 + 0.18 * sin(time * 2.5 + position.x * 17.3 + position.z * 11.7);
-        gl_PointSize = size * pixelRatio * (320.0 / -mvPos.z) * twinkle;
+        float tw = 0.82 + 0.18 * sin(time*2.5 + position.x*17.3 + position.z*11.7);
+        gl_PointSize = size * pixelRatio * (320.0 / -mvPos.z) * tw;
         gl_Position = projectionMatrix * mvPos;
-      }
-    `,
+      }`,
     fragmentShader: `
       varying vec3 vColor;
       void main() {
-        vec2 uv = gl_PointCoord - 0.5;
-        float d = length(uv);
+        vec2 uv = gl_PointCoord - 0.5; float d = length(uv);
         if (d > 0.5) discard;
         float alpha = 1.0 - smoothstep(0.08, 0.5, d);
-        float glow = exp(-d * 5.5) * 0.65;
-        vec3 col = vColor + glow * vec3(0.35, 0.2, 0.45);
-        gl_FragColor = vec4(col, alpha * 0.92);
-      }
-    `,
-    transparent: true,
-    depthWrite: false,
-    vertexColors: true,
-    blending: THREE.AdditiveBlending,
+        float glow = exp(-d*5.5)*0.65;
+        gl_FragColor = vec4(vColor + glow*vec3(0.35,0.2,0.45), alpha*0.92);
+      }`,
+    transparent: true, depthWrite: false, vertexColors: true, blending: THREE.AdditiveBlending
   });
 
   galaxyMesh = new THREE.Points(geo, mat);
@@ -475,37 +287,22 @@ function buildGalaxy() {
 }
 
 function buildNebulaClouds() {
-  // Đám mây nebula tím/xanh xung quanh — giống ảnh model
   const N = 2500;
-  const positions = new Float32Array(N * 3);
-  const colors = new Float32Array(N * 3);
-  const sizes = new Float32Array(N);
+  const positions = new Float32Array(N*3), colors = new Float32Array(N*3), sizes = new Float32Array(N);
 
   for (let i = 0; i < N; i++) {
     const angle = Math.random() * Math.PI * 2;
     const r = 1.5 + Math.pow(Math.random(), 0.7) * 5.0;
-    const cloudAngle = angle + r * 3.8 + (Math.random() - 0.5) * 0.9;
-
-    positions[i*3]   = Math.cos(cloudAngle) * r + (Math.random()-0.5) * 1.2;
-    positions[i*3+1] = (Math.random()-0.5) * 0.7 * Math.exp(-r * 0.2);
-    positions[i*3+2] = Math.sin(cloudAngle) * r + (Math.random()-0.5) * 1.2;
-
+    const ca = angle + r * 3.8 + (Math.random()-0.5)*0.9;
+    positions[i*3]   = Math.cos(ca)*r + (Math.random()-0.5)*1.2;
+    positions[i*3+1] = (Math.random()-0.5)*0.7*Math.exp(-r*0.2);
+    positions[i*3+2] = Math.sin(ca)*r + (Math.random()-0.5)*1.2;
     const t = Math.random();
-    if (t < 0.25) {
-      // Tím sâu (như đám mây viền ngoài)
-      colors[i*3]=0.28; colors[i*3+1]=0.08; colors[i*3+2]=0.55;
-    } else if (t < 0.5) {
-      // Xanh tím
-      colors[i*3]=0.12; colors[i*3+1]=0.15; colors[i*3+2]=0.65;
-    } else if (t < 0.75) {
-      // Hồng tím (vùng giữa)
-      colors[i*3]=0.65; colors[i*3+1]=0.18; colors[i*3+2]=0.55;
-    } else {
-      // Xanh dương đậm
-      colors[i*3]=0.08; colors[i*3+1]=0.22; colors[i*3+2]=0.72;
-    }
-
-    sizes[i] = 0.5 + Math.random() * 2.0;
+    if      (t < 0.25) { colors[i*3]=0.28; colors[i*3+1]=0.08; colors[i*3+2]=0.55; }
+    else if (t < 0.50) { colors[i*3]=0.12; colors[i*3+1]=0.15; colors[i*3+2]=0.65; }
+    else if (t < 0.75) { colors[i*3]=0.65; colors[i*3+1]=0.18; colors[i*3+2]=0.55; }
+    else               { colors[i*3]=0.08; colors[i*3+1]=0.22; colors[i*3+2]=0.72; }
+    sizes[i] = 0.5 + Math.random()*2.0;
   }
 
   const geo = new THREE.BufferGeometry();
@@ -516,33 +313,23 @@ function buildNebulaClouds() {
   const mat = new THREE.ShaderMaterial({
     uniforms: { time: { value: 0 }, pixelRatio: { value: renderer.getPixelRatio() } },
     vertexShader: `
-      attribute float size;
-      attribute vec3 color;
-      varying vec3 vColor;
-      uniform float time;
-      uniform float pixelRatio;
+      attribute float size; attribute vec3 color; varying vec3 vColor;
+      uniform float time, pixelRatio;
       void main() {
         vColor = color;
         vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-        float pulse = 0.88 + 0.12 * sin(time * 0.6 + position.x * 3.7 + position.z * 2.9);
+        float pulse = 0.88 + 0.12*sin(time*0.6 + position.x*3.7 + position.z*2.9);
         gl_PointSize = size * pixelRatio * (300.0 / -mvPos.z) * pulse;
         gl_Position = projectionMatrix * mvPos;
-      }
-    `,
+      }`,
     fragmentShader: `
       varying vec3 vColor;
       void main() {
-        vec2 uv = gl_PointCoord - 0.5;
-        float d = length(uv);
+        vec2 uv = gl_PointCoord - 0.5; float d = length(uv);
         if (d > 0.5) discard;
-        float alpha = exp(-d * 2.8) * 0.45;
-        gl_FragColor = vec4(vColor, alpha);
-      }
-    `,
-    transparent: true,
-    depthWrite: false,
-    vertexColors: true,
-    blending: THREE.AdditiveBlending,
+        gl_FragColor = vec4(vColor, exp(-d*2.8)*0.45);
+      }`,
+    transparent: true, depthWrite: false, vertexColors: true, blending: THREE.AdditiveBlending
   });
 
   nebulaParticles = new THREE.Points(geo, mat);
@@ -550,28 +337,20 @@ function buildNebulaClouds() {
 }
 
 function buildCoreGlow() {
-  // Ánh sáng lõi trắng hồng (sprite lớn ở trung tâm)
   const N = 300;
-  const positions = new Float32Array(N * 3);
-  const colors = new Float32Array(N * 3);
-  const sizes = new Float32Array(N);
+  const positions = new Float32Array(N*3), colors = new Float32Array(N*3), sizes = new Float32Array(N);
 
   for (let i = 0; i < N; i++) {
     const angle = Math.random() * Math.PI * 2;
     const r = Math.pow(Math.random(), 1.8) * 1.2;
-    positions[i*3]   = Math.cos(angle) * r + (Math.random()-0.5)*0.3;
+    positions[i*3]   = Math.cos(angle)*r + (Math.random()-0.5)*0.3;
     positions[i*3+1] = (Math.random()-0.5)*0.15;
-    positions[i*3+2] = Math.sin(angle) * r + (Math.random()-0.5)*0.3;
-
+    positions[i*3+2] = Math.sin(angle)*r + (Math.random()-0.5)*0.3;
     const t = r / 1.2;
-    if (t < 0.3) {
-      colors[i*3]=1.0; colors[i*3+1]=0.98; colors[i*3+2]=0.95; // trắng sáng
-    } else if (t < 0.6) {
-      colors[i*3]=1.0; colors[i*3+1]=0.75; colors[i*3+2]=0.8;  // hồng nhạt
-    } else {
-      colors[i*3]=0.95; colors[i*3+1]=0.45; colors[i*3+2]=0.65; // đỏ hồng
-    }
-    sizes[i] = 0.3 + Math.random() * 1.8;
+    if      (t < 0.3) { colors[i*3]=1.0;  colors[i*3+1]=0.98; colors[i*3+2]=0.95; }
+    else if (t < 0.6) { colors[i*3]=1.0;  colors[i*3+1]=0.75; colors[i*3+2]=0.80; }
+    else               { colors[i*3]=0.95; colors[i*3+1]=0.45; colors[i*3+2]=0.65; }
+    sizes[i] = 0.3 + Math.random()*1.8;
   }
 
   const geo = new THREE.BufferGeometry();
@@ -582,33 +361,23 @@ function buildCoreGlow() {
   const mat = new THREE.ShaderMaterial({
     uniforms: { time: { value: 0 }, pixelRatio: { value: renderer.getPixelRatio() } },
     vertexShader: `
-      attribute float size;
-      attribute vec3 color;
-      varying vec3 vColor;
-      uniform float time;
-      uniform float pixelRatio;
+      attribute float size; attribute vec3 color; varying vec3 vColor;
+      uniform float time, pixelRatio;
       void main() {
         vColor = color;
         vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-        float pulse = 0.9 + 0.1 * sin(time * 1.2 + position.x * 8.0);
+        float pulse = 0.9 + 0.1*sin(time*1.2 + position.x*8.0);
         gl_PointSize = size * pixelRatio * (350.0 / -mvPos.z) * pulse;
         gl_Position = projectionMatrix * mvPos;
-      }
-    `,
+      }`,
     fragmentShader: `
       varying vec3 vColor;
       void main() {
-        vec2 uv = gl_PointCoord - 0.5;
-        float d = length(uv);
+        vec2 uv = gl_PointCoord - 0.5; float d = length(uv);
         if (d > 0.5) discard;
-        float alpha = exp(-d * 2.2) * 0.55;
-        gl_FragColor = vec4(vColor, alpha);
-      }
-    `,
-    transparent: true,
-    depthWrite: false,
-    vertexColors: true,
-    blending: THREE.AdditiveBlending,
+        gl_FragColor = vec4(vColor, exp(-d*2.2)*0.55);
+      }`,
+    transparent: true, depthWrite: false, vertexColors: true, blending: THREE.AdditiveBlending
   });
 
   coreGlow = new THREE.Points(geo, mat);
@@ -616,60 +385,48 @@ function buildCoreGlow() {
 }
 
 function buildDustArms() {
-  // Bụi tối dọc theo cánh tay xoắn ốc
   const N = 4000;
-  const pos = new Float32Array(N * 3);
-  const col = new Float32Array(N * 3);
+  const pos = new Float32Array(N*3), col = new Float32Array(N*3);
   for (let i = 0; i < N; i++) {
     const arm = i % 4;
-    const armA = (arm / 4) * Math.PI * 2;
-    const r = 0.8 + Math.pow(Math.random(), 0.6) * 5.0;
-    const spin = r * 4.0;
-    const angle = armA + spin + (Math.random() - 0.5) * 0.65;
-    pos[i*3]   = Math.cos(angle) * r + (Math.random()-0.5)*0.5;
-    pos[i*3+1] = (Math.random()-0.5) * 0.12;
-    pos[i*3+2] = Math.sin(angle) * r + (Math.random()-0.5)*0.5;
-    // màu tím đen như vệt bụi trong ảnh
+    const armA = (arm/4)*Math.PI*2;
+    const r = 0.8 + Math.pow(Math.random(),0.6)*5.0;
+    const angle = armA + r*4.0 + (Math.random()-0.5)*0.65;
+    pos[i*3]   = Math.cos(angle)*r + (Math.random()-0.5)*0.5;
+    pos[i*3+1] = (Math.random()-0.5)*0.12;
+    pos[i*3+2] = Math.sin(angle)*r + (Math.random()-0.5)*0.5;
     col[i*3]=0.18; col[i*3+1]=0.06; col[i*3+2]=0.32;
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
-  const mat = new THREE.PointsMaterial({
+  dustCloud = new THREE.Points(geo, new THREE.PointsMaterial({
     size: 0.14, transparent: true, opacity: 0.18,
     vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false
-  });
-  dustCloud = new THREE.Points(geo, mat);
+  }));
   scene.add(dustCloud);
 }
 
 function buildStarField() {
-  // Nền sao trắng (như ảnh: nền đen có nhiều sao trắng nhỏ)
   const N = 7000;
-  const pos = new Float32Array(N * 3);
-  const col = new Float32Array(N * 3);
+  const pos = new Float32Array(N*3), col = new Float32Array(N*3);
   for (let i = 0; i < N; i++) {
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    const r = 50 + Math.random() * 80;
-    pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
-    pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-    pos[i*3+2] = r * Math.cos(phi);
-    // Một số sao xanh lạnh, một số trắng ấm
+    const theta = Math.random()*Math.PI*2;
+    const phi   = Math.acos(2*Math.random()-1);
+    const r     = 50 + Math.random()*80;
+    pos[i*3]   = r*Math.sin(phi)*Math.cos(theta);
+    pos[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
+    pos[i*3+2] = r*Math.cos(phi);
     const warm = Math.random() > 0.5;
-    col[i*3]   = warm ? 0.9 : 0.7;
-    col[i*3+1] = warm ? 0.9 : 0.75;
-    col[i*3+2] = warm ? 0.85 : 1.0;
+    col[i*3]=warm?0.9:0.7; col[i*3+1]=warm?0.9:0.75; col[i*3+2]=warm?0.85:1.0;
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
-  const mat = new THREE.PointsMaterial({
+  scene.add(new THREE.Points(geo, new THREE.PointsMaterial({
     size: 0.07, transparent: true, opacity: 0.8,
-    vertexColors: true,
-    blending: THREE.AdditiveBlending, depthWrite: false
-  });
-  scene.add(new THREE.Points(geo, mat));
+    vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false
+  })));
 }
 
 function updateCamera() {
@@ -689,23 +446,26 @@ function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// ─── MEDIAPIPE ────────────────────────────────────────────────────────────
+// ─── MEDIAPIPE LOADING ────────────────────────────────────────────────────
+// FIX BUG 1: Tải tuần tự và đợi cả hai script load xong trước khi resolve
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = () => reject(new Error('Failed: ' + src));
+    document.head.appendChild(s);
+  });
+}
+
 async function loadMediaPipe() {
   loadStatus.textContent = 'Tải MediaPipe Hands...';
   loaderBar.style.width = '20%';
-  return new Promise((resolve, reject) => {
-    const s1 = document.createElement('script');
-    s1.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
-    s1.onload = () => {
-      const s2 = document.createElement('script');
-      s2.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js';
-      s2.onload = () => { loaderBar.style.width = '60%'; loadStatus.textContent = 'Khởi tạo AI model...'; resolve(); };
-      s2.onerror = reject;
-      document.head.appendChild(s2);
-    };
-    s1.onerror = reject;
-    document.head.appendChild(s1);
-  });
+  await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
+  loaderBar.style.width = '45%';
+  await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
+  loaderBar.style.width = '60%';
+  loadStatus.textContent = 'Khởi tạo AI model...';
+  // Đảm bảo globals đã sẵn sàng
+  await new Promise(r => setTimeout(r, 200));
 }
 
 async function initHandTracking() {
@@ -715,36 +475,27 @@ async function initHandTracking() {
     locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
   });
   handDetector.setOptions({
-    maxNumHands: 2,           // ← 2 tay
+    maxNumHands: 2,
     modelComplexity: 1,
     minDetectionConfidence: 0.65,
     minTrackingConfidence: 0.55
   });
   handDetector.onResults(onHandResults);
 
-  try {
-    videoStream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 320, height: 240, facingMode: 'user', frameRate: { ideal: 30 } }
-    });
-    video.srcObject = videoStream;
-    await video.play();
-    loaderBar.style.width = '90%';
-    loadStatus.textContent = 'Camera sẵn sàng!';
+  videoStream = await navigator.mediaDevices.getUserMedia({
+    video: { width: 320, height: 240, facingMode: 'user', frameRate: { ideal: 30 } }
+  });
+  video.srcObject = videoStream;
+  await video.play();
+  loaderBar.style.width = '90%';
+  loadStatus.textContent = 'Camera sẵn sàng!';
 
-    // Kiểm tra Camera utils đã load chưa
-    if (typeof Camera === 'undefined') {
-      throw new Error('Camera utils chưa load xong');
-    }
-
-    const mpCam = new Camera(video, {
-      onFrame: async () => { if (handDetector) await handDetector.send({ image: video }); },
-      width: 320, height: 240
-    });
-    mpCam.start();
-  } catch (e) {
-    loadStatus.textContent = '⚠️ Không thể truy cập camera: ' + e.message;
-    throw e;
-  }
+  // FIX BUG 1: Không cần kiểm tra typeof Camera nữa vì đã đảm bảo load xong
+  const mpCam = new Camera(video, {
+    onFrame: async () => { if (handDetector) await handDetector.send({ image: video }); },
+    width: 320, height: 240
+  });
+  mpCam.start();
 }
 
 // ─── GESTURE RECOGNITION ──────────────────────────────────────────────────
@@ -754,26 +505,24 @@ function dist2D(a, b) {
 
 function recognizeGesture(lm) {
   const WRIST=lm[0], THUMB_TIP=lm[4], INDEX_TIP=lm[8],
-        MIDDLE_TIP=lm[12], RING_TIP=lm[16], PINKY_TIP=lm[20],
-        MIDDLE_MCP=lm[9], THUMB_IP=lm[3];
+        MIDDLE_TIP=lm[12], RING_TIP=lm[16], PINKY_TIP=lm[20], MIDDLE_MCP=lm[9];
 
   const fingerUp = (tip, pip) => tip.y < pip.y;
-  const indexUp  = fingerUp(INDEX_TIP, lm[6]);
+  const indexUp  = fingerUp(INDEX_TIP,  lm[6]);
   const middleUp = fingerUp(MIDDLE_TIP, lm[10]);
-  const ringUp   = fingerUp(RING_TIP, lm[14]);
-  const pinkyUp  = fingerUp(PINKY_TIP, lm[18]);
-
-  const allDown = !indexUp && !middleUp && !ringUp && !pinkyUp;
+  const ringUp   = fingerUp(RING_TIP,   lm[14]);
+  const pinkyUp  = fingerUp(PINKY_TIP,  lm[18]);
+  const allDown  = !indexUp && !middleUp && !ringUp && !pinkyUp;
 
   const pinchDist = dist2D(THUMB_TIP, INDEX_TIP);
   const handSize  = dist2D(WRIST, MIDDLE_MCP);
   const isPinch   = pinchDist < handSize * 0.3;
 
-  const isOK     = isPinch && middleUp && ringUp && pinkyUp;
-  const isFist   = allDown && !isPinch;
-  const isOpen   = indexUp && middleUp && ringUp && pinkyUp;
-  const isPeace  = indexUp && middleUp && !ringUp && !pinkyUp;
-  const isPoint  = indexUp && !middleUp && !ringUp && !pinkyUp;
+  const isOK    = isPinch && middleUp && ringUp && pinkyUp;
+  const isFist  = allDown && !isPinch;
+  const isOpen  = indexUp && middleUp && ringUp && pinkyUp;
+  const isPeace = indexUp && middleUp && !ringUp && !pinkyUp;
+  const isPoint = indexUp && !middleUp && !ringUp && !pinkyUp;
 
   if (isOK)    return { name:'OK',      icon:'👌', pinchDist, handSize };
   if (isFist)  return { name:'FIST',    icon:'✊', pinchDist, handSize };
@@ -784,4 +533,259 @@ function recognizeGesture(lm) {
   return         { name:'NEUTRAL', icon:'✋', pinchDist, handSize };
 }
 
+// ─── HAND RESULTS (FIX BUG 2,3,4,5) ─────────────────────────────────────
 function onHandResults(results) {
+  const hCanvas = document.getElementById('hand-canvas');
+  const ctx     = hCanvas.getContext('2d');
+  hCanvas.width = 200; hCanvas.height = 130;
+  ctx.clearRect(0, 0, 200, 130);
+
+  const hGlow   = document.getElementById('hand-glow');
+  const handCount = results.multiHandLandmarks ? results.multiHandLandmarks.length : 0;
+
+  // FIX BUG 3: Cập nhật số tay
+  document.getElementById('s-hands').textContent = handCount;
+
+  if (handCount === 0) {
+    // FIX BUG 4: Reset cả hai zoom state khi không có tay
+    pinchActive = false; pinchStartRelDist = null; pinchStartZoomDist = null;
+    twoHandActive = false; twoHandStartDist = null; twoHandStartZoomDist = null;
+    prevHandX = null; prevHandY = null;
+    hGlow.style.display = 'none';
+    document.getElementById('s-gesture').textContent = '—';
+    autoRotate = true;
+    return;
+  }
+
+  autoRotate = false;
+  gestureCooldown = Math.max(0, gestureCooldown - 1);
+
+  // ── HAI TAY: two-hand spread zoom ──────────────────────────────────────
+  if (handCount === 2) {
+    const lm0 = results.multiHandLandmarks[0];
+    const lm1 = results.multiHandLandmarks[1];
+
+    // Vị trí cổ tay trung bình (mirrored)
+    const cx0 = 1 - lm0[0].x, cy0 = lm0[0].y;
+    const cx1 = 1 - lm1[0].x, cy1 = lm1[0].y;
+    const curDist = Math.sqrt((cx0-cx1)**2 + (cy0-cy1)**2);
+
+    if (!twoHandActive) {
+      twoHandActive = true;
+      twoHandStartDist = curDist;
+      twoHandStartZoomDist = targetDist;
+    }
+
+    // FIX BUG 5: Dùng ratio so với lúc bắt đầu, không snapshot từng frame
+    const scale = twoHandStartDist / Math.max(curDist, 0.01);
+    targetDist = Math.max(2.0, Math.min(16, twoHandStartZoomDist * scale));
+
+    // Vẽ cả 2 bàn tay
+    drawHandSkeleton(ctx, lm0, 200, 130, null);
+    drawHandSkeleton(ctx, lm1, 200, 130, null);
+
+    // Glow theo tay đầu tiên
+    hGlow.style.display = 'block';
+    hGlow.style.left = cx0 * window.innerWidth + 'px';
+    hGlow.style.top  = cy0 * window.innerHeight + 'px';
+
+    document.getElementById('s-gesture').textContent = '🙌 2-HAND ZOOM';
+    document.getElementById('s-zoom').textContent = (6 / distance).toFixed(1) + 'x';
+
+    // Reset single-hand state khi đang dùng 2 tay
+    pinchActive = false; pinchStartRelDist = null; pinchStartZoomDist = null;
+    prevHandX = null; prevHandY = null;
+    return;
+  }
+
+  // ── MỘT TAY ────────────────────────────────────────────────────────────
+  // Reset two-hand state khi quay về 1 tay
+  if (twoHandActive) {
+    twoHandActive = false; twoHandStartDist = null; twoHandStartZoomDist = null;
+  }
+
+  const lm      = results.multiHandLandmarks[0];
+  const gesture = recognizeGesture(lm);
+
+  drawHandSkeleton(ctx, lm, 200, 130, gesture);
+
+  // Glow cursor (mirrored)
+  const wx = (1 - lm[0].x) * window.innerWidth;
+  const wy = lm[0].y * window.innerHeight;
+  hGlow.style.display = 'block';
+  hGlow.style.left = wx + 'px';
+  hGlow.style.top  = wy + 'px';
+
+  document.getElementById('s-gesture').textContent = gesture.icon + ' ' + gesture.name;
+
+  // Trung tâm bàn tay (MIDDLE_MCP, mirrored)
+  const cx = 1 - lm[9].x;
+  const cy = lm[9].y;
+
+  // ── Áp dụng gesture ────────────────────────────────────────────────────
+  if (gesture.name === 'OK' && gestureCooldown === 0) {
+    targetAz = 0; targetEl = 25; targetDist = 6;
+    // FIX BUG 5: Reset pinch state khi reset camera
+    pinchActive = false; pinchStartRelDist = null; pinchStartZoomDist = null;
+    showGestureBadge('👌 RESET CAMERA');
+    gestureCooldown = 40;
+
+  } else if (gesture.name === 'PINCH') {
+    const relDist = gesture.pinchDist / Math.max(gesture.handSize, 0.01);
+    // FIX BUG 5: Snapshot chỉ 1 lần khi bắt đầu pinch
+    if (!pinchActive) {
+      pinchActive = true;
+      pinchStartRelDist  = relDist;
+      pinchStartZoomDist = targetDist;
+    }
+    const delta = (pinchStartRelDist - relDist) * 20;
+    targetDist = Math.max(2.0, Math.min(16, pinchStartZoomDist + delta));
+    showGestureBadge('🤏 ZOOM ' + (6/targetDist).toFixed(1) + 'x');
+
+  } else {
+    // FIX BUG 5: Reset pinch khi ra khỏi PINCH gesture
+    pinchActive = false; pinchStartRelDist = null; pinchStartZoomDist = null;
+
+    if (gesture.name === 'FIST' || gesture.name === 'POINT') {
+      if (prevHandX !== null) {
+        const dx = (cx - prevHandX) * 200;
+        const dy = (cy - prevHandY) * 140;
+        targetAz += dx * 2.5;
+        targetEl  = Math.max(-85, Math.min(85, targetEl - dy * 2.0));
+      }
+    } else if (gesture.name === 'PEACE') {
+      targetAz += 1.4;
+      showGestureBadge('✌️ TURBO ORBIT');
+    } else if (gesture.name === 'OPEN') {
+      targetAz += 0.35; // float drift
+    } else {
+      // NEUTRAL: điều hướng nhẹ theo tay
+      if (prevHandX !== null) {
+        const dx = (cx - prevHandX) * 100;
+        const dy = (cy - prevHandY) * 80;
+        targetAz += dx * 1.5;
+        targetEl  = Math.max(-85, Math.min(85, targetEl - dy * 1.5));
+      }
+    }
+  }
+
+  prevHandX = cx;
+  prevHandY = cy;
+}
+
+// ─── DRAW HAND SKELETON ───────────────────────────────────────────────────
+function drawHandSkeleton(ctx, lm, w, h, gesture) {
+  const CONNECTIONS = [
+    [0,1],[1,2],[2,3],[3,4],
+    [0,5],[5,6],[6,7],[7,8],
+    [0,9],[9,10],[10,11],[11,12],
+    [0,13],[13,14],[14,15],[15,16],
+    [0,17],[17,18],[18,19],[19,20],
+    [5,9],[9,13],[13,17]
+  ];
+  const px = lm.map(p => [(1-p.x)*w, p.y*h]);
+
+  ctx.strokeStyle = gesture ? 'rgba(192,132,252,0.55)' : 'rgba(56,189,248,0.4)';
+  ctx.lineWidth = 1.5;
+  CONNECTIONS.forEach(([a,b]) => {
+    ctx.beginPath(); ctx.moveTo(px[a][0], px[a][1]);
+    ctx.lineTo(px[b][0], px[b][1]); ctx.stroke();
+  });
+
+  px.forEach(([x, y], i) => {
+    const isTip = [4,8,12,16,20].includes(i);
+    ctx.beginPath(); ctx.arc(x, y, isTip ? 3.5 : 2, 0, Math.PI*2);
+    ctx.fillStyle = isTip ? '#f472b6' : '#c084fc';
+    ctx.fill();
+  });
+}
+
+// ─── GESTURE BADGE ────────────────────────────────────────────────────────
+function showGestureBadge(text) {
+  const badge = document.getElementById('gesture-badge');
+  badge.textContent = text;
+  badge.classList.add('show');
+  clearTimeout(gestureTimer);
+  gestureTimer = setTimeout(() => badge.classList.remove('show'), 1800);
+}
+
+// ─── RENDER LOOP (FIX BUG 6: cập nhật time cho tất cả ShaderMaterial) ────
+let time = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  time += 0.008;
+
+  // FPS counter
+  frameCount++;
+  const now = performance.now();
+  if (now - lastFpsTime > 1000) {
+    document.getElementById('fps-badge').textContent =
+      Math.round(frameCount * 1000 / (now - lastFpsTime)) + ' FPS';
+    frameCount = 0; lastFpsTime = now;
+  }
+
+  if (autoRotate) targetAz += 0.07;
+
+  // Smooth interpolation
+  azimuth   += (targetAz   - azimuth)   * 0.06;
+  elevation += (targetEl   - elevation) * 0.06;
+  distance  += (targetDist - distance)  * 0.06;
+
+  updateCamera();
+
+  // HUD
+  document.getElementById('s-az').textContent   = Math.round(((azimuth % 360) + 360) % 360) + '°';
+  document.getElementById('s-el').textContent   = Math.round(elevation) + '°';
+  document.getElementById('s-zoom').textContent = (6 / distance).toFixed(1) + 'x';
+
+  // FIX BUG 6: Cập nhật time uniform cho TẤT CẢ ShaderMaterial
+  if (galaxyMesh)       galaxyMesh.material.uniforms.time.value       = time;
+  if (nebulaParticles)  nebulaParticles.material.uniforms.time.value  = time;
+  if (coreGlow)         coreGlow.material.uniforms.time.value         = time;
+
+  // Rotate galaxy layers (FIX BUG 7: dustCloud dùng rotation trực tiếp, không cần uniform)
+  if (galaxyMesh)      galaxyMesh.rotation.y      =  time * 0.05;
+  if (nebulaParticles) nebulaParticles.rotation.y =  time * 0.03;
+  if (dustCloud)       dustCloud.rotation.y       = -time * 0.02;
+  if (coreGlow)        coreGlow.rotation.y        =  time * 0.04;
+
+  renderer.render(scene, camera3D);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+async function init() {
+  initThree();
+  animate();
+  try {
+    await loadMediaPipe();
+    loaderBar.style.width = '80%';
+    loadStatus.textContent = 'Sẵn sàng! Nhấn để bắt đầu';
+    document.getElementById('btn-start').style.display = 'block';
+  } catch (e) {
+    loadStatus.textContent = '⚠️ ' + e.message;
+    document.getElementById('btn-start').style.display = 'block';
+    document.getElementById('btn-start').textContent = 'Tiếp tục (không tay)';
+  }
+}
+
+async function startExperience() {
+  loaderBar.style.width = '85%';
+  loadStatus.textContent = 'Đang khởi động camera...';
+  try {
+    await initHandTracking();
+    loaderBar.style.width = '100%';
+    loadStatus.textContent = '✨ Thiên hà sẵn sàng!';
+    await new Promise(r => setTimeout(r, 500));
+    document.getElementById('loading').classList.add('hidden');
+    showGestureBadge('🌌 THIÊN HÀ ĐÃ SẴN SÀNG');
+  } catch (e) {
+    loadStatus.textContent = '⚠️ Không có camera: ' + e.message;
+    await new Promise(r => setTimeout(r, 1200));
+    document.getElementById('loading').classList.add('hidden');
+  }
+}
+
+init();
+</script>
+</body>
+</html>
