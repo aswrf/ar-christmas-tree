@@ -5,787 +5,873 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🌌 Dải Thiên Hà - Hand Control</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000308;color:#e2e8f0;font-family:'Rajdhani',sans-serif;overflow:hidden;height:100dvh;width:100vw}
+#galaxy-canvas{position:fixed;inset:0;z-index:1}
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --cosmic-dark: #00020a;
-  --glow-cyan: #22d3ee;
-  --text-dim: rgba(180,190,210,0.7);
+/* Camera preview - bottom left */
+#cam-wrap{
+  position:fixed;bottom:16px;left:16px;z-index:20;
+  width:220px;height:145px;border-radius:14px;overflow:hidden;
+  border:1.5px solid rgba(180,80,255,0.5);
+  box-shadow:0 0 20px rgba(180,80,255,0.25);
+}
+#cam-video{
+  width:100%;height:100%;object-fit:cover;
+  transform:scaleX(-1);display:block;
+}
+#hand-canvas{
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;
+}
+#cam-label{
+  position:absolute;top:6px;left:8px;
+  font-family:'Orbitron',monospace;font-size:8px;
+  color:rgba(200,150,255,0.8);letter-spacing:2px;
+  text-shadow:0 0 8px rgba(180,80,255,0.8);
+}
+#hand-status{
+  position:absolute;bottom:6px;left:0;right:0;text-align:center;
+  font-family:'Orbitron',monospace;font-size:9px;
+  color:rgba(200,150,255,0.9);letter-spacing:1px;
 }
 
-body {
-  background: var(--cosmic-dark);
-  color: #e2e8f0;
-  font-family: 'Rajdhani', sans-serif;
-  overflow: hidden;
-  height: 100dvh;
-  width: 100vw;
+/* HUD top */
+#hud{
+  position:fixed;top:0;left:0;right:0;z-index:30;
+  padding:14px 20px;display:flex;justify-content:space-between;align-items:flex-start;
+  background:linear-gradient(to bottom,rgba(0,3,8,0.92) 0%,transparent 100%);
+  pointer-events:none;
+}
+.hud-title{
+  font-family:'Orbitron',monospace;font-weight:900;
+  font-size:clamp(13px,2.2vw,20px);
+  background:linear-gradient(135deg,#ff6ec7,#c084fc,#60a5fa,#22d3ee);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:3px;
+}
+.hud-sub{font-size:10px;color:rgba(160,130,210,0.7);letter-spacing:3px;text-transform:uppercase;margin-top:3px}
+
+#stats-panel{
+  background:rgba(0,3,10,0.75);
+  border:1px solid rgba(160,80,255,0.3);
+  border-radius:10px;padding:10px 14px;
+  font-size:11px;font-family:'Orbitron',monospace;
+  min-width:155px;backdrop-filter:blur(10px);
+}
+.sr{display:flex;justify-content:space-between;gap:10px;margin-bottom:3px}
+.sl{color:rgba(160,130,200,0.7);font-size:10px}
+.sv{color:#d8b4fe;font-weight:700;font-size:11px}
+
+/* Gesture badge center */
+#gesture-badge{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  z-index:40;font-family:'Orbitron',monospace;
+  font-size:clamp(13px,2.5vw,18px);font-weight:700;
+  padding:10px 26px;border-radius:30px;
+  background:rgba(100,30,180,0.45);
+  border:1px solid rgba(200,100,255,0.65);
+  backdrop-filter:blur(16px);color:#f0e0ff;
+  letter-spacing:2px;opacity:0;
+  transition:opacity 0.25s;pointer-events:none;text-align:center;
+}
+#gesture-badge.show{opacity:1}
+
+/* Controls guide - bottom right */
+#guide{
+  position:fixed;bottom:16px;right:16px;z-index:30;
+  background:rgba(0,3,10,0.78);
+  border:1px solid rgba(160,80,255,0.2);
+  border-radius:12px;padding:11px 14px;
+  backdrop-filter:blur(10px);max-width:230px;
+}
+.gt{font-family:'Orbitron',monospace;font-size:9px;color:#c084fc;letter-spacing:2px;margin-bottom:7px;text-transform:uppercase}
+.gr{display:flex;align-items:center;gap:7px;margin-bottom:4px;color:rgba(170,140,210,0.8);font-size:11px}
+.gi{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+
+/* FPS */
+#fps{
+  position:fixed;top:14px;left:50%;transform:translateX(-50%);
+  z-index:35;font-family:'Orbitron',monospace;font-size:10px;
+  color:rgba(180,100,255,0.45);letter-spacing:2px;
 }
 
-#galaxy-canvas { position: fixed; inset: 0; z-index: 1; }
-
-#cam-video {
-  position: fixed; bottom: 16px; left: 16px;
-  width: 200px; height: 130px; border-radius: 12px;
-  border: 1px solid rgba(56,189,248,0.3);
-  object-fit: cover; transform: scaleX(-1);
-  z-index: 10; opacity: 0.85;
+/* Loading overlay */
+#loading{
+  position:fixed;inset:0;background:#000308;z-index:100;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  transition:opacity 0.8s;
 }
-
-#hand-canvas {
-  position: fixed; bottom: 16px; left: 16px;
-  width: 200px; height: 130px; border-radius: 12px;
-  z-index: 11; pointer-events: none;
+#loading.hidden{opacity:0;pointer-events:none}
+.lt{
+  font-family:'Orbitron',monospace;font-size:clamp(20px,5vw,36px);font-weight:900;
+  background:linear-gradient(135deg,#ff6ec7,#c084fc,#60a5fa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  text-align:center;letter-spacing:4px;line-height:1.3;
 }
-
-#hud {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
-  padding: 16px 20px; display: flex;
-  justify-content: space-between; align-items: flex-start;
-  background: linear-gradient(to bottom, rgba(0,2,10,0.9) 0%, transparent 100%);
+.ls{font-size:13px;color:rgba(160,130,200,0.8);letter-spacing:2px;text-align:center;max-width:300px}
+.lbw{width:240px;height:3px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
+.lb{height:100%;background:linear-gradient(90deg,#c084fc,#f472b6,#fb7185);width:0%;border-radius:3px;transition:width 0.5s;animation:bp 1.8s ease-in-out infinite}
+@keyframes bp{0%,100%{opacity:1}50%{opacity:0.4}}
+.btn{
+  display:none;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;
+  letter-spacing:3px;padding:13px 34px;border-radius:50px;
+  border:1px solid #c084fc;background:rgba(192,132,252,0.1);
+  color:#c084fc;cursor:pointer;transition:all 0.3s;margin-top:6px;
 }
+.btn:hover{background:rgba(192,132,252,0.22);box-shadow:0 0 28px rgba(192,132,252,0.4)}
 
-.hud-title {
-  font-family: 'Orbitron', monospace; font-weight: 900;
-  font-size: clamp(14px, 2.5vw, 22px);
-  background: linear-gradient(135deg, #ff9de2, #c084fc, #60a5fa);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  letter-spacing: 2px;
-}
-
-.hud-sub { font-size: 11px; color: var(--text-dim); letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; }
-
-#stats-panel {
-  background: rgba(0,2,10,0.7); border: 1px solid rgba(140,80,255,0.25);
-  border-radius: 10px; padding: 10px 14px; font-size: 12px;
-  font-family: 'Orbitron', monospace; min-width: 160px; backdrop-filter: blur(8px);
-}
-
-.stat-row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
-.stat-label { color: var(--text-dim); }
-.stat-val { color: #c084fc; font-weight: 700; }
-
-#gesture-badge {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  z-index: 30; font-family: 'Orbitron', monospace;
-  font-size: clamp(14px, 3vw, 20px); font-weight: 700;
-  padding: 10px 24px; border-radius: 30px;
-  background: rgba(80,20,160,0.4); border: 1px solid rgba(160,80,255,0.6);
-  backdrop-filter: blur(12px); color: #e2e8f0;
-  letter-spacing: 2px; opacity: 0; transition: opacity 0.3s;
-  pointer-events: none; text-align: center;
-}
-#gesture-badge.show { opacity: 1; }
-
-#controls-guide {
-  position: fixed; bottom: 16px; right: 16px; z-index: 20;
-  background: rgba(0,2,10,0.75); border: 1px solid rgba(140,80,255,0.2);
-  border-radius: 12px; padding: 12px 16px; font-size: 12px;
-  backdrop-filter: blur(8px); max-width: 240px;
-}
-.guide-title { font-family: 'Orbitron', monospace; font-size: 10px; color: #c084fc; letter-spacing: 2px; margin-bottom: 8px; text-transform: uppercase; }
-.guide-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; color: var(--text-dim); font-size: 11px; }
-.guide-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
-
-#loading {
-  position: fixed; inset: 0; background: var(--cosmic-dark); z-index: 100;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 20px; transition: opacity 0.8s;
-}
-#loading.hidden { opacity: 0; pointer-events: none; }
-
-.loader-title {
-  font-family: 'Orbitron', monospace; font-size: clamp(18px, 4vw, 32px); font-weight: 900;
-  background: linear-gradient(135deg, #ff9de2, #c084fc, #60a5fa);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  text-align: center; letter-spacing: 3px;
-}
-.loader-status { font-size: 14px; color: var(--text-dim); letter-spacing: 2px; text-align: center; }
-.loader-bar-wrap { width: 260px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
-.loader-bar {
-  height: 100%; background: linear-gradient(90deg, #c084fc, #f472b6);
-  width: 0%; border-radius: 3px; transition: width 0.4s;
-  animation: barPulse 2s ease-in-out infinite;
-}
-@keyframes barPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
-.btn-start {
-  display: none; font-family: 'Orbitron', monospace; font-size: 14px;
-  font-weight: 700; letter-spacing: 3px; padding: 14px 36px; border-radius: 50px;
-  border: 1px solid #c084fc; background: rgba(192,132,252,0.12); color: #c084fc;
-  cursor: pointer; transition: all 0.3s;
-}
-.btn-start:hover { background: rgba(192,132,252,0.25); box-shadow: 0 0 30px rgba(192,132,252,0.4); }
-
-#fps-badge {
-  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-  z-index: 25; font-family: 'Orbitron', monospace; font-size: 11px;
-  color: rgba(192,132,252,0.5); letter-spacing: 2px;
-}
-
-#hand-glow {
-  position: fixed; pointer-events: none; z-index: 15;
-  width: 60px; height: 60px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(192,132,252,0.3) 0%, transparent 70%);
-  border: 1px solid rgba(192,132,252,0.4);
-  transform: translate(-50%, -50%); transition: opacity 0.2s;
-  opacity: 0; display: none;
+/* Hand cursor glow */
+#hglow{
+  position:fixed;pointer-events:none;z-index:15;
+  width:56px;height:56px;border-radius:50%;
+  background:radial-gradient(circle,rgba(200,100,255,0.35) 0%,transparent 70%);
+  border:1px solid rgba(200,100,255,0.5);
+  transform:translate(-50%,-50%);
+  transition:left 0.05s,top 0.05s;
+  display:none;
 }
 </style>
 </head>
 <body>
 
+<!-- Loading -->
 <div id="loading">
-  <div class="loader-title">🌌 THIÊN HÀ<br>HAND CONTROL</div>
-  <div class="loader-status" id="load-status">Đang tải MediaPipe...</div>
-  <div class="loader-bar-wrap"><div class="loader-bar" id="loader-bar"></div></div>
-  <button class="btn-start" id="btn-start" onclick="startExperience()">✨ BẮT ĐẦU</button>
+  <div class="lt">🌌 NEBULA<br>HAND CONTROL</div>
+  <div class="ls" id="ls">Khởi tạo Three.js...</div>
+  <div class="lbw"><div class="lb" id="lb"></div></div>
+  <button class="btn" id="btnstart" onclick="startExp()">✨ BẮT ĐẦU</button>
 </div>
 
+<!-- Galaxy -->
 <canvas id="galaxy-canvas"></canvas>
-<video id="cam-video" autoplay muted playsinline></video>
-<canvas id="hand-canvas"></canvas>
-<div id="hand-glow"></div>
 
+<!-- Camera preview -->
+<div id="cam-wrap">
+  <video id="cam-video" autoplay muted playsinline></video>
+  <canvas id="hand-canvas"></canvas>
+  <div id="cam-label">HAND CAM</div>
+  <div id="hand-status">Chưa phát hiện tay</div>
+</div>
+
+<!-- Hand glow cursor -->
+<div id="hglow"></div>
+
+<!-- HUD -->
 <div id="hud">
   <div>
-    <div class="hud-title">🌌 GALAXY CONTROL</div>
-    <div class="hud-sub">Hand Tracking · 3D Nebula</div>
+    <div class="hud-title">🌌 NEBULA CTRL</div>
+    <div class="hud-sub">MediaPipe · Three.js WebGL</div>
   </div>
   <div id="stats-panel">
-    <div class="stat-row"><span class="stat-label">Azimuth</span><span class="stat-val" id="s-az">0°</span></div>
-    <div class="stat-row"><span class="stat-label">Elevation</span><span class="stat-val" id="s-el">25°</span></div>
-    <div class="stat-row"><span class="stat-label">Zoom</span><span class="stat-val" id="s-zoom">1.0x</span></div>
-    <div class="stat-row"><span class="stat-label">Gesture</span><span class="stat-val" id="s-gesture">—</span></div>
-    <div class="stat-row"><span class="stat-label">Hands</span><span class="stat-val" id="s-hands">0</span></div>
+    <div class="sr"><span class="sl">Azimuth</span><span class="sv" id="saz">0°</span></div>
+    <div class="sr"><span class="sl">Elevation</span><span class="sv" id="sel">25°</span></div>
+    <div class="sr"><span class="sl">Zoom</span><span class="sv" id="szoom">1.0×</span></div>
+    <div class="sr"><span class="sl">Gesture</span><span class="sv" id="sgest">—</span></div>
+    <div class="sr"><span class="sl">Hands</span><span class="sv" id="shands">0</span></div>
   </div>
 </div>
 
-<div id="fps-badge">60 FPS</div>
+<div id="fps">60 FPS</div>
 <div id="gesture-badge"></div>
 
-<div id="controls-guide">
-  <div class="guide-title">✦ Controls</div>
-  <div class="guide-row"><span class="guide-icon">✊</span><span>Nắm tay → Xoay thiên hà</span></div>
-  <div class="guide-row"><span class="guide-icon">🤏</span><span>Véo ngón → Zoom 1 tay</span></div>
-  <div class="guide-row"><span class="guide-icon">🙌</span><span>2 tay kéo ra → Zoom sâu</span></div>
-  <div class="guide-row"><span class="guide-icon">🖐️</span><span>Mở tay → Trôi nổi</span></div>
-  <div class="guide-row"><span class="guide-icon">✌️</span><span>Peace → Turbo orbit</span></div>
-  <div class="guide-row"><span class="guide-icon">👌</span><span>OK → Reset camera</span></div>
+<!-- Guide -->
+<div id="guide">
+  <div class="gt">✦ CONTROLS</div>
+  <div class="gr"><span class="gi">✊</span><span>Nắm tay → Xoay thiên hà</span></div>
+  <div class="gr"><span class="gi">🤏</span><span>Véo ngón → Zoom</span></div>
+  <div class="gr"><span class="gi">🙌</span><span>2 tay → Spread zoom</span></div>
+  <div class="gr"><span class="gi">🖐️</span><span>Mở tay → Auto drift</span></div>
+  <div class="gr"><span class="gi">✌️</span><span>Peace → Turbo spin</span></div>
+  <div class="gr"><span class="gi">👌</span><span>OK → Reset view</span></div>
 </div>
 
+<!-- Three.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ─── GLOBALS ───────────────────────────────────────────────────────────────
-let camera3D, scene, renderer, galaxyMesh, nebulaParticles, dustCloud, coreGlow;
-let azimuth = 0, elevation = 25, distance = 6;
-let targetAz = 0, targetEl = 25, targetDist = 6;
-let autoRotate = true;
-let handDetector = null;
-let gestureCooldown = 0;
-let prevHandX = null, prevHandY = null;
-let frameCount = 0, lastFpsTime = performance.now();
-let gestureTimer = null;
-let videoStream = null;
+'use strict';
+// ═══════════════════════════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════════════════════════
+let renderer, scene, camera3D;
+let galaxyPts, nebulaPts, dustPts, coreGlowPts, bgStars;
+let azimuth=0, elevation=25, distance=6;
+let targetAz=0, targetEl=25, targetDist=6;
+let autoRotate=true;
+let time=0;
+let frameCount=0, lastFpsT=performance.now();
 
-// Single-hand pinch zoom state
-let pinchActive = false, pinchStartRelDist = null, pinchStartZoomDist = null;
-// Two-hand spread zoom state
-let twoHandActive = false, twoHandStartDist = null, twoHandStartZoomDist = null;
+// Hand tracking
+let handDetector=null, mpCamera=null;
+let prevCX=null, prevCY=null;
+let gestureCooldown=0;
+let gestureFlashTimer=null;
 
-const loaderBar = document.getElementById('loader-bar');
-const loadStatus = document.getElementById('load-status');
+// Zoom state (clean snapshot approach)
+let pinchActive=false, pinchStartRel=null, pinchStartDist=null;
+let spreadActive=false, spreadStartDist=null, spreadStartZoomDist=null;
 
-// ─── THREE.JS GALAXY ──────────────────────────────────────────────────────
+// DOM refs
+const elLs    = document.getElementById('ls');
+const elLb    = document.getElementById('lb');
+const elBtn   = document.getElementById('btnstart');
+const elSaz   = document.getElementById('saz');
+const elSel   = document.getElementById('sel');
+const elSzoom = document.getElementById('szoom');
+const elSgest = document.getElementById('sgest');
+const elShands= document.getElementById('shands');
+const elFps   = document.getElementById('fps');
+const elBadge = document.getElementById('gesture-badge');
+const elHglow = document.getElementById('hglow');
+const elHstat = document.getElementById('hand-status');
+
+// ═══════════════════════════════════════════════════════════
+// THREE.JS — NEBULA GALAXY
+// Màu theo ảnh: nền đen sâu, đám mây cam/đỏ/vàng bên phải,
+// tím/xanh cyan bên trái, sao trắng lấp lánh
+// ═══════════════════════════════════════════════════════════
 function initThree() {
   const canvas = document.getElementById('galaxy-canvas');
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setClearColor(0x00020a);
+  renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setClearColor(0x000308, 1);
 
   scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x00020a, 0.018);
+  scene.fog = new THREE.FogExp2(0x000308, 0.012);
 
-  camera3D = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
-  updateCamera();
+  camera3D = new THREE.PerspectiveCamera(58, innerWidth/innerHeight, 0.1, 300);
+  syncCamera();
 
-  buildGalaxy();
-  buildNebulaClouds();
-  buildCoreGlow();
-  buildDustArms();
-  buildStarField();
+  buildNebulaCloud();   // đám mây khí chính — cam, tím, cyan
+  buildGalaxyArms();    // dải sao xoắn ốc
+  buildCoreGlow();      // lõi sáng trắng-vàng
+  buildDustLanes();     // vệt bụi tối
+  buildStarField();     // nền sao
 
-  window.addEventListener('resize', onResize);
-}
-
-function buildGalaxy() {
-  const N = 100000;
-  const positions = new Float32Array(N * 3);
-  const colors    = new Float32Array(N * 3);
-  const sizes     = new Float32Array(N);
-  const arms = 4, spinFactor = 4.0, spread = 0.3;
-
-  for (let i = 0; i < N; i++) {
-    const armIdx   = i % arms;
-    const armAngle = (armIdx / arms) * Math.PI * 2;
-    const r        = Math.pow(Math.random(), 0.55) * 5.8;
-    const spin     = r * spinFactor;
-    const angle    = armAngle + spin + (Math.random() - 0.5) * spread * (r * 0.5 + 0.5);
-
-    positions[i*3]   = Math.cos(angle) * r + (Math.random()-0.5) * spread * (r*0.45+0.3);
-    positions[i*3+1] = (Math.random()-0.5) * 0.22 * Math.exp(-r * 0.5);
-    positions[i*3+2] = Math.sin(angle) * r + (Math.random()-0.5) * spread * (r*0.45+0.3);
-
-    const t = r / 5.8;
-    let cr, cg, cb;
-    if      (t < 0.08) { cr=1.0;  cg=0.97; cb=0.92; }
-    else if (t < 0.20) { const f=(t-0.08)/0.12; cr=1.0; cg=0.97-f*0.15; cb=0.92-f*0.3; }
-    else if (t < 0.38) { const f=(t-0.20)/0.18; cr=1.0-f*0.05; cg=0.82-f*0.35; cb=0.62-f*0.25; }
-    else if (t < 0.55) { const f=(t-0.38)/0.17; cr=0.95-f*0.35; cg=0.47-f*0.2; cb=0.37+f*0.45; }
-    else if (t < 0.72) { const f=(t-0.55)/0.17; cr=0.60-f*0.3; cg=0.27-f*0.05; cb=0.82+f*0.1; }
-    else               { const f=(t-0.72)/0.28; cr=0.30-f*0.18; cg=0.22+f*0.05; cb=0.92-f*0.25; }
-
-    const bright = 0.45 + Math.random() * 0.55;
-    colors[i*3]=cr*bright; colors[i*3+1]=cg*bright; colors[i*3+2]=cb*bright;
-    sizes[i] = t < 0.12 ? (0.07 + Math.random()*0.12) : (0.012 + Math.random()*0.038);
-  }
-
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
-  geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
-
-  const mat = new THREE.ShaderMaterial({
-    uniforms: { time: { value: 0 }, pixelRatio: { value: renderer.getPixelRatio() } },
-    vertexShader: `
-      attribute float size; attribute vec3 color; varying vec3 vColor;
-      uniform float time, pixelRatio;
-      void main() {
-        vColor = color;
-        vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-        float tw = 0.82 + 0.18 * sin(time*2.5 + position.x*17.3 + position.z*11.7);
-        gl_PointSize = size * pixelRatio * (320.0 / -mvPos.z) * tw;
-        gl_Position = projectionMatrix * mvPos;
-      }`,
-    fragmentShader: `
-      varying vec3 vColor;
-      void main() {
-        vec2 uv = gl_PointCoord - 0.5; float d = length(uv);
-        if (d > 0.5) discard;
-        float alpha = 1.0 - smoothstep(0.08, 0.5, d);
-        float glow = exp(-d*5.5)*0.65;
-        gl_FragColor = vec4(vColor + glow*vec3(0.35,0.2,0.45), alpha*0.92);
-      }`,
-    transparent: true, depthWrite: false, vertexColors: true, blending: THREE.AdditiveBlending
+  addEventListener('resize', () => {
+    camera3D.aspect = innerWidth/innerHeight;
+    camera3D.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
   });
-
-  galaxyMesh = new THREE.Points(geo, mat);
-  scene.add(galaxyMesh);
 }
 
-function buildNebulaClouds() {
-  const N = 2500;
-  const positions = new Float32Array(N*3), colors = new Float32Array(N*3), sizes = new Float32Array(N);
+// ─── Nebula cloud particles (đám mây khí như ảnh) ─────────────────────────
+function buildNebulaCloud() {
+  const N = 3500;
+  const pos = new Float32Array(N*3);
+  const col = new Float32Array(N*3);
+  const sz  = new Float32Array(N);
 
-  for (let i = 0; i < N; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const r = 1.5 + Math.pow(Math.random(), 0.7) * 5.0;
-    const ca = angle + r * 3.8 + (Math.random()-0.5)*0.9;
-    positions[i*3]   = Math.cos(ca)*r + (Math.random()-0.5)*1.2;
-    positions[i*3+1] = (Math.random()-0.5)*0.7*Math.exp(-r*0.2);
-    positions[i*3+2] = Math.sin(ca)*r + (Math.random()-0.5)*1.2;
-    const t = Math.random();
-    if      (t < 0.25) { colors[i*3]=0.28; colors[i*3+1]=0.08; colors[i*3+2]=0.55; }
-    else if (t < 0.50) { colors[i*3]=0.12; colors[i*3+1]=0.15; colors[i*3+2]=0.65; }
-    else if (t < 0.75) { colors[i*3]=0.65; colors[i*3+1]=0.18; colors[i*3+2]=0.55; }
-    else               { colors[i*3]=0.08; colors[i*3+1]=0.22; colors[i*3+2]=0.72; }
-    sizes[i] = 0.5 + Math.random()*2.0;
+  for (let i=0; i<N; i++) {
+    // Phân bố trong không gian 3D không đều — tạo hình nebula tự nhiên
+    const region = Math.random();
+    let x,y,z, cr,cg,cb;
+
+    if (region < 0.35) {
+      // Vùng CAM/ĐỎ — như cột khí bên phải ảnh
+      const r = 0.5 + Math.pow(Math.random(),0.7)*3.5;
+      const a = -0.3 + Math.random()*1.2; // góc hẹp bên phải
+      x = Math.cos(a)*r + (Math.random()-0.5)*1.5;
+      y = (Math.random()-0.5)*2.5 + Math.random()*1.0;
+      z = Math.sin(a)*r + (Math.random()-0.5)*1.0;
+      // Màu cam–đỏ–vàng cam
+      const t = Math.random();
+      if (t < 0.4) { cr=1.0; cg=0.45+Math.random()*0.2; cb=0.1; }      // cam đậm
+      else if (t<0.7){ cr=0.9; cg=0.25+Math.random()*0.15; cb=0.05; }   // đỏ cam
+      else { cr=1.0; cg=0.65+Math.random()*0.2; cb=0.15; }              // vàng cam
+    } else if (region < 0.65) {
+      // Vùng TÍM/MAGENTA — trái trên ảnh
+      const r = 0.8 + Math.pow(Math.random(),0.65)*3.0;
+      const a = Math.PI*0.6 + Math.random()*1.0;
+      x = Math.cos(a)*r + (Math.random()-0.5)*1.2;
+      y = (Math.random()-0.5)*2.0 + Math.random()*0.8;
+      z = Math.sin(a)*r + (Math.random()-0.5)*1.0;
+      const t = Math.random();
+      if (t < 0.45) { cr=0.75; cg=0.08; cb=0.9; }   // tím sáng
+      else if (t<0.75){ cr=0.9; cg=0.1; cb=0.6; }   // magenta
+      else { cr=0.5; cg=0.05; cb=0.75; }            // tím sâu
+    } else {
+      // Vùng CYAN/XANH — rải rác như ảnh
+      const r = 1.0 + Math.pow(Math.random(),0.8)*4.0;
+      const a = Math.PI*1.1 + Math.random()*1.5;
+      x = Math.cos(a)*r + (Math.random()-0.5)*1.8;
+      y = (Math.random()-0.5)*1.5;
+      z = Math.sin(a)*r + (Math.random()-0.5)*1.5;
+      const t = Math.random();
+      if (t < 0.5) { cr=0.05; cg=0.6; cb=1.0; }     // cyan
+      else if (t<0.78){ cr=0.05; cg=0.35; cb=0.85; } // xanh dương
+      else { cr=0.1; cg=0.8; cb=0.9; }              // cyan sáng
+    }
+
+    pos[i*3]=x; pos[i*3+1]=y; pos[i*3+2]=z;
+    const bright = 0.3 + Math.random()*0.7;
+    col[i*3]=cr*bright; col[i*3+1]=cg*bright; col[i*3+2]=cb*bright;
+    sz[i] = 0.6 + Math.random()*2.8;
   }
 
   const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
-  geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+  geo.setAttribute('size',     new THREE.BufferAttribute(sz,1));
 
-  const mat = new THREE.ShaderMaterial({
-    uniforms: { time: { value: 0 }, pixelRatio: { value: renderer.getPixelRatio() } },
-    vertexShader: `
-      attribute float size; attribute vec3 color; varying vec3 vColor;
-      uniform float time, pixelRatio;
-      void main() {
-        vColor = color;
-        vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-        float pulse = 0.88 + 0.12*sin(time*0.6 + position.x*3.7 + position.z*2.9);
-        gl_PointSize = size * pixelRatio * (300.0 / -mvPos.z) * pulse;
-        gl_Position = projectionMatrix * mvPos;
+  nebulaPts = new THREE.Points(geo, makeCloudMat());
+  scene.add(nebulaPts);
+}
+
+function makeCloudMat() {
+  return new THREE.ShaderMaterial({
+    uniforms:{ time:{value:0}, pr:{value:renderer.getPixelRatio()} },
+    vertexShader:`
+      attribute float size; attribute vec3 color; varying vec3 vC;
+      uniform float time,pr;
+      void main(){
+        vC=color;
+        vec4 mv=modelViewMatrix*vec4(position,1.0);
+        float p=0.88+0.12*sin(time*0.5+position.x*2.1+position.z*1.7);
+        gl_PointSize=size*pr*(280.0/-mv.z)*p;
+        gl_Position=projectionMatrix*mv;
       }`,
-    fragmentShader: `
-      varying vec3 vColor;
-      void main() {
-        vec2 uv = gl_PointCoord - 0.5; float d = length(uv);
-        if (d > 0.5) discard;
-        gl_FragColor = vec4(vColor, exp(-d*2.8)*0.45);
+    fragmentShader:`
+      varying vec3 vC;
+      void main(){
+        vec2 uv=gl_PointCoord-0.5; float d=length(uv);
+        if(d>0.5)discard;
+        float a=exp(-d*2.4)*0.55;
+        gl_FragColor=vec4(vC,a);
       }`,
-    transparent: true, depthWrite: false, vertexColors: true, blending: THREE.AdditiveBlending
+    transparent:true,depthWrite:false,vertexColors:true,blending:THREE.AdditiveBlending
   });
-
-  nebulaParticles = new THREE.Points(geo, mat);
-  scene.add(nebulaParticles);
 }
 
-function buildCoreGlow() {
-  const N = 300;
-  const positions = new Float32Array(N*3), colors = new Float32Array(N*3), sizes = new Float32Array(N);
+// ─── Dải sao xoắn ốc ──────────────────────────────────────────────────────
+function buildGalaxyArms() {
+  const N = 90000;
+  const pos = new Float32Array(N*3);
+  const col = new Float32Array(N*3);
+  const sz  = new Float32Array(N);
 
-  for (let i = 0; i < N; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const r = Math.pow(Math.random(), 1.8) * 1.2;
-    positions[i*3]   = Math.cos(angle)*r + (Math.random()-0.5)*0.3;
-    positions[i*3+1] = (Math.random()-0.5)*0.15;
-    positions[i*3+2] = Math.sin(angle)*r + (Math.random()-0.5)*0.3;
-    const t = r / 1.2;
-    if      (t < 0.3) { colors[i*3]=1.0;  colors[i*3+1]=0.98; colors[i*3+2]=0.95; }
-    else if (t < 0.6) { colors[i*3]=1.0;  colors[i*3+1]=0.75; colors[i*3+2]=0.80; }
-    else               { colors[i*3]=0.95; colors[i*3+1]=0.45; colors[i*3+2]=0.65; }
-    sizes[i] = 0.3 + Math.random()*1.8;
+  for (let i=0; i<N; i++) {
+    const arm   = i%3;
+    const armA  = (arm/3)*Math.PI*2;
+    const r     = Math.pow(Math.random(),0.5)*5.5;
+    const spin  = r*3.8;
+    const angle = armA + spin + (Math.random()-0.5)*0.35*(r*0.5+0.4);
+
+    pos[i*3]  = Math.cos(angle)*r + (Math.random()-0.5)*0.28*(r*0.5+0.3);
+    pos[i*3+1]= (Math.random()-0.5)*0.2*Math.exp(-r*0.45);
+    pos[i*3+2]= Math.sin(angle)*r + (Math.random()-0.5)*0.28*(r*0.5+0.3);
+
+    const t = r/5.5;
+    let cr,cg,cb;
+    // Gradient màu theo vị trí — phản ánh màu nebula trong ảnh
+    const armAngleNorm = (armA/(Math.PI*2)); // 0..1
+    if (t<0.1)       { cr=1.0; cg=0.98; cb=0.92; }  // lõi trắng
+    else if (t<0.25) {
+      // Cánh tay — màu theo arm
+      if (arm===0)     { cr=1.0; cg=0.55; cb=0.15; }  // cam
+      else if (arm===1){ cr=0.8; cg=0.1;  cb=0.9;  }  // tím
+      else             { cr=0.1; cg=0.65; cb=1.0;  }  // cyan
+    } else if (t<0.5) {
+      if (arm===0)     { cr=0.9; cg=0.3;  cb=0.1;  }  // đỏ cam
+      else if (arm===1){ cr=0.65;cg=0.05; cb=0.8;  }  // tím
+      else             { cr=0.05;cg=0.45; cb=0.85; }  // xanh
+    } else {
+      if (arm===0)     { cr=0.6; cg=0.15; cb=0.05; }  // nâu đỏ
+      else if (arm===1){ cr=0.35;cg=0.02; cb=0.55; }  // tím đậm
+      else             { cr=0.02;cg=0.25; cb=0.6;  }  // xanh đậm
+    }
+
+    const bright = 0.5+Math.random()*0.5;
+    col[i*3]=cr*bright; col[i*3+1]=cg*bright; col[i*3+2]=cb*bright;
+    sz[i] = t<0.1 ? (0.06+Math.random()*0.1) : (0.01+Math.random()*0.035);
   }
 
   const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
-  geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col,3));
+  geo.setAttribute('size',     new THREE.BufferAttribute(sz,1));
 
-  const mat = new THREE.ShaderMaterial({
-    uniforms: { time: { value: 0 }, pixelRatio: { value: renderer.getPixelRatio() } },
-    vertexShader: `
-      attribute float size; attribute vec3 color; varying vec3 vColor;
-      uniform float time, pixelRatio;
-      void main() {
-        vColor = color;
-        vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-        float pulse = 0.9 + 0.1*sin(time*1.2 + position.x*8.0);
-        gl_PointSize = size * pixelRatio * (350.0 / -mvPos.z) * pulse;
-        gl_Position = projectionMatrix * mvPos;
+  galaxyPts = new THREE.Points(geo, new THREE.ShaderMaterial({
+    uniforms:{ time:{value:0}, pr:{value:renderer.getPixelRatio()} },
+    vertexShader:`
+      attribute float size; attribute vec3 color; varying vec3 vC;
+      uniform float time,pr;
+      void main(){
+        vC=color;
+        vec4 mv=modelViewMatrix*vec4(position,1.0);
+        float tw=0.84+0.16*sin(time*2.8+position.x*19.0+position.z*13.5);
+        gl_PointSize=size*pr*(330.0/-mv.z)*tw;
+        gl_Position=projectionMatrix*mv;
       }`,
-    fragmentShader: `
-      varying vec3 vColor;
-      void main() {
-        vec2 uv = gl_PointCoord - 0.5; float d = length(uv);
-        if (d > 0.5) discard;
-        gl_FragColor = vec4(vColor, exp(-d*2.2)*0.55);
+    fragmentShader:`
+      varying vec3 vC;
+      void main(){
+        vec2 uv=gl_PointCoord-0.5; float d=length(uv);
+        if(d>0.5)discard;
+        float a=1.0-smoothstep(0.05,0.5,d);
+        float g=exp(-d*6.0)*0.7;
+        gl_FragColor=vec4(vC+g*vec3(0.3,0.2,0.4),a*0.9);
       }`,
-    transparent: true, depthWrite: false, vertexColors: true, blending: THREE.AdditiveBlending
-  });
-
-  coreGlow = new THREE.Points(geo, mat);
-  scene.add(coreGlow);
-}
-
-function buildDustArms() {
-  const N = 4000;
-  const pos = new Float32Array(N*3), col = new Float32Array(N*3);
-  for (let i = 0; i < N; i++) {
-    const arm = i % 4;
-    const armA = (arm/4)*Math.PI*2;
-    const r = 0.8 + Math.pow(Math.random(),0.6)*5.0;
-    const angle = armA + r*4.0 + (Math.random()-0.5)*0.65;
-    pos[i*3]   = Math.cos(angle)*r + (Math.random()-0.5)*0.5;
-    pos[i*3+1] = (Math.random()-0.5)*0.12;
-    pos[i*3+2] = Math.sin(angle)*r + (Math.random()-0.5)*0.5;
-    col[i*3]=0.18; col[i*3+1]=0.06; col[i*3+2]=0.32;
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
-  dustCloud = new THREE.Points(geo, new THREE.PointsMaterial({
-    size: 0.14, transparent: true, opacity: 0.18,
-    vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false
+    transparent:true,depthWrite:false,vertexColors:true,blending:THREE.AdditiveBlending
   }));
-  scene.add(dustCloud);
+  scene.add(galaxyPts);
 }
 
-function buildStarField() {
-  const N = 7000;
-  const pos = new Float32Array(N*3), col = new Float32Array(N*3);
-  for (let i = 0; i < N; i++) {
-    const theta = Math.random()*Math.PI*2;
-    const phi   = Math.acos(2*Math.random()-1);
-    const r     = 50 + Math.random()*80;
-    pos[i*3]   = r*Math.sin(phi)*Math.cos(theta);
-    pos[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
-    pos[i*3+2] = r*Math.cos(phi);
-    const warm = Math.random() > 0.5;
-    col[i*3]=warm?0.9:0.7; col[i*3+1]=warm?0.9:0.75; col[i*3+2]=warm?0.85:1.0;
+// ─── Core glow — trung tâm sáng trắng vàng ────────────────────────────────
+function buildCoreGlow() {
+  const N=400;
+  const pos=new Float32Array(N*3), col=new Float32Array(N*3), sz=new Float32Array(N);
+  for(let i=0;i<N;i++){
+    const a=Math.random()*Math.PI*2;
+    const r=Math.pow(Math.random(),2.0)*1.0;
+    pos[i*3]=Math.cos(a)*r+(Math.random()-0.5)*0.25;
+    pos[i*3+1]=(Math.random()-0.5)*0.12;
+    pos[i*3+2]=Math.sin(a)*r+(Math.random()-0.5)*0.25;
+    const t=r/1.0;
+    if(t<0.3){col[i*3]=1.0;col[i*3+1]=1.0;col[i*3+2]=0.9;}       // putih
+    else if(t<0.6){col[i*3]=1.0;col[i*3+1]=0.8;col[i*3+2]=0.5;}   // kuning
+    else{col[i*3]=1.0;col[i*3+1]=0.5;col[i*3+2]=0.2;}              // oranye
+    sz[i]=0.4+Math.random()*2.2;
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
-  scene.add(new THREE.Points(geo, new THREE.PointsMaterial({
-    size: 0.07, transparent: true, opacity: 0.8,
-    vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false
-  })));
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',   new THREE.BufferAttribute(col,3));
+  geo.setAttribute('size',    new THREE.BufferAttribute(sz,1));
+  coreGlowPts=new THREE.Points(geo,new THREE.ShaderMaterial({
+    uniforms:{time:{value:0},pr:{value:renderer.getPixelRatio()}},
+    vertexShader:`
+      attribute float size;attribute vec3 color;varying vec3 vC;
+      uniform float time,pr;
+      void main(){vC=color;vec4 mv=modelViewMatrix*vec4(position,1.0);
+        float p=0.9+0.1*sin(time*1.5+position.x*10.0);
+        gl_PointSize=size*pr*(380.0/-mv.z)*p;gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`
+      varying vec3 vC;
+      void main(){vec2 uv=gl_PointCoord-0.5;float d=length(uv);
+        if(d>0.5)discard;gl_FragColor=vec4(vC,exp(-d*2.0)*0.65);}`,
+    transparent:true,depthWrite:false,vertexColors:true,blending:THREE.AdditiveBlending
+  }));
+  scene.add(coreGlowPts);
 }
 
-function updateCamera() {
-  const azRad = azimuth * Math.PI / 180;
-  const elRad = elevation * Math.PI / 180;
+// ─── Dust lanes — vệt bụi tối ─────────────────────────────────────────────
+function buildDustLanes() {
+  const N=5000;
+  const pos=new Float32Array(N*3), col=new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    const arm=i%3;
+    const armA=(arm/3)*Math.PI*2;
+    const r=0.8+Math.pow(Math.random(),0.6)*4.8;
+    const a=armA+r*3.8+(Math.random()-0.5)*0.6;
+    pos[i*3]=Math.cos(a)*r+(Math.random()-0.5)*0.5;
+    pos[i*3+1]=(Math.random()-0.5)*0.1;
+    pos[i*3+2]=Math.sin(a)*r+(Math.random()-0.5)*0.5;
+    // Màu bụi theo cánh — phản ánh nebula region
+    if(arm===0){col[i*3]=0.25;col[i*3+1]=0.08;col[i*3+2]=0.02;}    // bụi cam tối
+    else if(arm===1){col[i*3]=0.15;col[i*3+1]=0.02;col[i*3+2]=0.25;} // bụi tím tối
+    else{col[i*3]=0.02;col[i*3+1]=0.12;col[i*3+2]=0.22;}            // bụi xanh tối
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',   new THREE.BufferAttribute(col,3));
+  dustPts=new THREE.Points(geo,new THREE.PointsMaterial({
+    size:0.12,transparent:true,opacity:0.2,
+    vertexColors:true,blending:THREE.AdditiveBlending,depthWrite:false
+  }));
+  scene.add(dustPts);
+}
+
+// ─── Background stars — nền sao trắng như ảnh ─────────────────────────────
+function buildStarField() {
+  const N=8000;
+  const pos=new Float32Array(N*3), col=new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    const th=Math.random()*Math.PI*2;
+    const ph=Math.acos(2*Math.random()-1);
+    const r=60+Math.random()*100;
+    pos[i*3]=r*Math.sin(ph)*Math.cos(th);
+    pos[i*3+1]=r*Math.sin(ph)*Math.sin(th);
+    pos[i*3+2]=r*Math.cos(ph);
+    // Phần lớn sao trắng, một số xanh/đỏ nhạt như ảnh
+    const t=Math.random();
+    if(t<0.7){col[i*3]=0.9;col[i*3+1]=0.9;col[i*3+2]=0.95;}
+    else if(t<0.85){col[i*3]=0.7;col[i*3+1]=0.8;col[i*3+2]=1.0;}
+    else{col[i*3]=1.0;col[i*3+1]=0.8;col[i*3+2]=0.75;}
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',   new THREE.BufferAttribute(col,3));
+  bgStars=new THREE.Points(geo,new THREE.PointsMaterial({
+    size:0.065,transparent:true,opacity:0.85,
+    vertexColors:true,blending:THREE.AdditiveBlending,depthWrite:false
+  }));
+  scene.add(bgStars);
+}
+
+function syncCamera() {
+  const az=azimuth*Math.PI/180, el=elevation*Math.PI/180;
   camera3D.position.set(
-    distance * Math.cos(elRad) * Math.sin(azRad),
-    distance * Math.sin(elRad),
-    distance * Math.cos(elRad) * Math.cos(azRad)
+    distance*Math.cos(el)*Math.sin(az),
+    distance*Math.sin(el),
+    distance*Math.cos(el)*Math.cos(az)
   );
-  camera3D.lookAt(0, 0, 0);
+  camera3D.lookAt(0,0,0);
 }
 
-function onResize() {
-  camera3D.aspect = window.innerWidth / window.innerHeight;
-  camera3D.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+// ═══════════════════════════════════════════════════════════
+// RENDER LOOP
+// ═══════════════════════════════════════════════════════════
+function renderLoop() {
+  requestAnimationFrame(renderLoop);
+  time += 0.007;
+
+  // FPS
+  frameCount++;
+  const now=performance.now();
+  if(now-lastFpsT>1000){
+    elFps.textContent=Math.round(frameCount*1000/(now-lastFpsT))+' FPS';
+    frameCount=0; lastFpsT=now;
+  }
+
+  // Auto-rotate khi không có tay
+  if(autoRotate) targetAz+=0.06;
+
+  // Lerp camera
+  azimuth  +=(targetAz  -azimuth  )*0.055;
+  elevation+=(targetEl  -elevation)*0.055;
+  distance +=(targetDist-distance )*0.055;
+  syncCamera();
+
+  // Update HUD
+  elSaz.textContent  = Math.round(((azimuth%360)+360)%360)+'°';
+  elSel.textContent  = Math.round(elevation)+'°';
+  elSzoom.textContent= (6/distance).toFixed(1)+'×';
+
+  // Update shader time uniforms
+  if(galaxyPts)   galaxyPts.material.uniforms.time.value  =time;
+  if(nebulaPts)   nebulaPts.material.uniforms.time.value  =time;
+  if(coreGlowPts) coreGlowPts.material.uniforms.time.value=time;
+
+  // Rotation per layer — tạo parallax
+  if(galaxyPts)   { galaxyPts.rotation.y  = time*0.048; }
+  if(nebulaPts)   { nebulaPts.rotation.y  = time*0.028; }
+  if(dustPts)     { dustPts.rotation.y    =-time*0.018; }
+  if(coreGlowPts) { coreGlowPts.rotation.y= time*0.06; }
+
+  renderer.render(scene, camera3D);
 }
 
-// ─── MEDIAPIPE LOADING ────────────────────────────────────────────────────
-// FIX BUG 1: Tải tuần tự và đợi cả hai script load xong trước khi resolve
+// ═══════════════════════════════════════════════════════════
+// MEDIAPIPE HANDS — LOAD + INIT
+// Dùng @mediapipe/hands v0.4 (ổn định, WASM bundled)
+// ═══════════════════════════════════════════════════════════
 function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = src; s.onload = resolve; s.onerror = () => reject(new Error('Failed: ' + src));
+  return new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src=src; s.onload=res; s.onerror=()=>rej(new Error('Load fail: '+src));
     document.head.appendChild(s);
   });
 }
 
 async function loadMediaPipe() {
-  loadStatus.textContent = 'Tải MediaPipe Hands...';
-  loaderBar.style.width = '20%';
-  await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
-  loaderBar.style.width = '45%';
-  await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
-  loaderBar.style.width = '60%';
-  loadStatus.textContent = 'Khởi tạo AI model...';
-  // Đảm bảo globals đã sẵn sàng
-  await new Promise(r => setTimeout(r, 200));
+  setLoad('Tải Camera Utils...', 25);
+  await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js');
+
+  setLoad('Tải MediaPipe Hands...', 50);
+  await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js');
+
+  setLoad('Khởi tạo model AI...', 70);
+  // Đợi globals sẵn sàng
+  await new Promise(r=>setTimeout(r,300));
+
+  if(typeof Hands==='undefined') throw new Error('Hands not loaded');
+  if(typeof Camera==='undefined') throw new Error('Camera utils not loaded');
 }
 
 async function initHandTracking() {
-  const video = document.getElementById('cam-video');
+  const video=document.getElementById('cam-video');
+  const hCanvas=document.getElementById('hand-canvas');
 
-  handDetector = new Hands({
-    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+  // Init MediaPipe Hands
+  handDetector=new Hands({
+    locateFile: f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}`
   });
   handDetector.setOptions({
-    maxNumHands: 2,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.65,
-    minTrackingConfidence: 0.55
+    maxNumHands:2,
+    modelComplexity:1,
+    minDetectionConfidence:0.6,
+    minTrackingConfidence:0.5
   });
-  handDetector.onResults(onHandResults);
+  handDetector.onResults(r=>processHands(r, hCanvas));
 
-  videoStream = await navigator.mediaDevices.getUserMedia({
-    video: { width: 320, height: 240, facingMode: 'user', frameRate: { ideal: 30 } }
+  // Camera
+  const stream=await navigator.mediaDevices.getUserMedia({
+    video:{width:320,height:240,facingMode:'user',frameRate:{ideal:30,max:30}}
   });
-  video.srcObject = videoStream;
+  video.srcObject=stream;
   await video.play();
-  loaderBar.style.width = '90%';
-  loadStatus.textContent = 'Camera sẵn sàng!';
 
-  // FIX BUG 1: Không cần kiểm tra typeof Camera nữa vì đã đảm bảo load xong
-  const mpCam = new Camera(video, {
-    onFrame: async () => { if (handDetector) await handDetector.send({ image: video }); },
-    width: 320, height: 240
+  // MediaPipe Camera loop
+  mpCamera=new Camera(video,{
+    onFrame: async()=>{ if(handDetector) await handDetector.send({image:video}); },
+    width:320, height:240
   });
-  mpCam.start();
+  await mpCamera.start();
 }
 
-// ─── GESTURE RECOGNITION ──────────────────────────────────────────────────
-function dist2D(a, b) {
-  return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2);
+// ═══════════════════════════════════════════════════════════
+// GESTURE RECOGNITION
+// ═══════════════════════════════════════════════════════════
+function d2(a,b){ return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2); }
+
+function classifyGesture(lm) {
+  const W=lm[0], TT=lm[4], IT=lm[8], MT=lm[12], RT=lm[16], PT=lm[20];
+  const MMCP=lm[9];
+
+  const up=(tip,pip)=>tip.y<pip.y;
+  const iU=up(IT,lm[6]), mU=up(MT,lm[10]), rU=up(RT,lm[14]), pU=up(PT,lm[18]);
+  const allD=!iU&&!mU&&!rU&&!pU;
+
+  const pd=d2(TT,IT), hs=d2(W,MMCP);
+  const isPinch=pd<hs*0.28;
+
+  if(isPinch&&mU&&rU&&pU) return {n:'OK',    e:'👌',pd,hs};
+  if(allD&&!isPinch)       return {n:'FIST',  e:'✊',pd,hs};
+  if(isPinch)              return {n:'PINCH', e:'🤏',pd,hs};
+  if(iU&&mU&&rU&&pU)       return {n:'OPEN',  e:'🖐️',pd,hs};
+  if(iU&&mU&&!rU&&!pU)     return {n:'PEACE', e:'✌️',pd,hs};
+  if(iU&&!mU&&!rU&&!pU)    return {n:'POINT', e:'👆',pd,hs};
+  return                         {n:'NEUTRAL',e:'✋',pd,hs};
 }
 
-function recognizeGesture(lm) {
-  const WRIST=lm[0], THUMB_TIP=lm[4], INDEX_TIP=lm[8],
-        MIDDLE_TIP=lm[12], RING_TIP=lm[16], PINKY_TIP=lm[20], MIDDLE_MCP=lm[9];
+// ═══════════════════════════════════════════════════════════
+// PROCESS HANDS RESULTS
+// ═══════════════════════════════════════════════════════════
+function processHands(results, hCanvas) {
+  // Resize hand canvas to match its display size
+  hCanvas.width  = hCanvas.offsetWidth  || 220;
+  hCanvas.height = hCanvas.offsetHeight || 145;
+  const ctx=hCanvas.getContext('2d');
+  ctx.clearRect(0,0,hCanvas.width,hCanvas.height);
 
-  const fingerUp = (tip, pip) => tip.y < pip.y;
-  const indexUp  = fingerUp(INDEX_TIP,  lm[6]);
-  const middleUp = fingerUp(MIDDLE_TIP, lm[10]);
-  const ringUp   = fingerUp(RING_TIP,   lm[14]);
-  const pinkyUp  = fingerUp(PINKY_TIP,  lm[18]);
-  const allDown  = !indexUp && !middleUp && !ringUp && !pinkyUp;
+  const W=hCanvas.width, H=hCanvas.height;
+  const lms=results.multiHandLandmarks||[];
+  const count=lms.length;
 
-  const pinchDist = dist2D(THUMB_TIP, INDEX_TIP);
-  const handSize  = dist2D(WRIST, MIDDLE_MCP);
-  const isPinch   = pinchDist < handSize * 0.3;
+  elShands.textContent=count;
+  gestureCooldown=Math.max(0,gestureCooldown-1);
 
-  const isOK    = isPinch && middleUp && ringUp && pinkyUp;
-  const isFist  = allDown && !isPinch;
-  const isOpen  = indexUp && middleUp && ringUp && pinkyUp;
-  const isPeace = indexUp && middleUp && !ringUp && !pinkyUp;
-  const isPoint = indexUp && !middleUp && !ringUp && !pinkyUp;
-
-  if (isOK)    return { name:'OK',      icon:'👌', pinchDist, handSize };
-  if (isFist)  return { name:'FIST',    icon:'✊', pinchDist, handSize };
-  if (isPinch) return { name:'PINCH',   icon:'🤏', pinchDist, handSize };
-  if (isOpen)  return { name:'OPEN',    icon:'🖐️', pinchDist, handSize };
-  if (isPeace) return { name:'PEACE',   icon:'✌️', pinchDist, handSize };
-  if (isPoint) return { name:'POINT',   icon:'👆', pinchDist, handSize };
-  return         { name:'NEUTRAL', icon:'✋', pinchDist, handSize };
-}
-
-// ─── HAND RESULTS (FIX BUG 2,3,4,5) ─────────────────────────────────────
-function onHandResults(results) {
-  const hCanvas = document.getElementById('hand-canvas');
-  const ctx     = hCanvas.getContext('2d');
-  hCanvas.width = 200; hCanvas.height = 130;
-  ctx.clearRect(0, 0, 200, 130);
-
-  const hGlow   = document.getElementById('hand-glow');
-  const handCount = results.multiHandLandmarks ? results.multiHandLandmarks.length : 0;
-
-  // FIX BUG 3: Cập nhật số tay
-  document.getElementById('s-hands').textContent = handCount;
-
-  if (handCount === 0) {
-    // FIX BUG 4: Reset cả hai zoom state khi không có tay
-    pinchActive = false; pinchStartRelDist = null; pinchStartZoomDist = null;
-    twoHandActive = false; twoHandStartDist = null; twoHandStartZoomDist = null;
-    prevHandX = null; prevHandY = null;
-    hGlow.style.display = 'none';
-    document.getElementById('s-gesture').textContent = '—';
-    autoRotate = true;
+  // ── Không có tay ────────────────────────────────────────
+  if(count===0){
+    autoRotate=true;
+    prevCX=null; prevCY=null;
+    pinchActive=false; pinchStartRel=null; pinchStartDist=null;
+    spreadActive=false; spreadStartDist=null; spreadStartZoomDist=null;
+    elSgest.textContent='—';
+    elHglow.style.display='none';
+    elHstat.textContent='Chưa phát hiện tay';
     return;
   }
 
-  autoRotate = false;
-  gestureCooldown = Math.max(0, gestureCooldown - 1);
+  autoRotate=false;
 
-  // ── HAI TAY: two-hand spread zoom ──────────────────────────────────────
-  if (handCount === 2) {
-    const lm0 = results.multiHandLandmarks[0];
-    const lm1 = results.multiHandLandmarks[1];
+  // ── Hai tay: spread zoom ─────────────────────────────────
+  if(count===2){
+    const l0=lms[0], l1=lms[1];
+    drawSkeleton(ctx,l0,W,H,'#f472b6');
+    drawSkeleton(ctx,l1,W,H,'#60a5fa');
 
-    // Vị trí cổ tay trung bình (mirrored)
-    const cx0 = 1 - lm0[0].x, cy0 = lm0[0].y;
-    const cx1 = 1 - lm1[0].x, cy1 = lm1[0].y;
-    const curDist = Math.sqrt((cx0-cx1)**2 + (cy0-cy1)**2);
+    // Khoảng cách cổ tay (đã mirror X)
+    const x0=(1-l0[0].x), y0=l0[0].y;
+    const x1=(1-l1[0].x), y1=l1[0].y;
+    const curD=Math.sqrt((x0-x1)**2+(y0-y1)**2);
 
-    if (!twoHandActive) {
-      twoHandActive = true;
-      twoHandStartDist = curDist;
-      twoHandStartZoomDist = targetDist;
+    if(!spreadActive){
+      spreadActive=true;
+      spreadStartDist=curD;
+      spreadStartZoomDist=targetDist;
     }
+    const scale=spreadStartDist/Math.max(curD,0.01);
+    targetDist=Math.max(2.0, Math.min(18, spreadStartZoomDist*scale));
 
-    // FIX BUG 5: Dùng ratio so với lúc bắt đầu, không snapshot từng frame
-    const scale = twoHandStartDist / Math.max(curDist, 0.01);
-    targetDist = Math.max(2.0, Math.min(16, twoHandStartZoomDist * scale));
+    // Reset single-hand state
+    pinchActive=false; pinchStartRel=null; pinchStartDist=null;
+    prevCX=null; prevCY=null;
 
-    // Vẽ cả 2 bàn tay
-    drawHandSkeleton(ctx, lm0, 200, 130, null);
-    drawHandSkeleton(ctx, lm1, 200, 130, null);
+    // Glow ở giữa 2 tay
+    elHglow.style.display='block';
+    elHglow.style.left=((x0+x1)/2)*innerWidth+'px';
+    elHglow.style.top =((y0+y1)/2)*innerHeight+'px';
 
-    // Glow theo tay đầu tiên
-    hGlow.style.display = 'block';
-    hGlow.style.left = cx0 * window.innerWidth + 'px';
-    hGlow.style.top  = cy0 * window.innerHeight + 'px';
-
-    document.getElementById('s-gesture').textContent = '🙌 2-HAND ZOOM';
-    document.getElementById('s-zoom').textContent = (6 / distance).toFixed(1) + 'x';
-
-    // Reset single-hand state khi đang dùng 2 tay
-    pinchActive = false; pinchStartRelDist = null; pinchStartZoomDist = null;
-    prevHandX = null; prevHandY = null;
+    elSgest.textContent='🙌 SPREAD';
+    elHstat.textContent='2 TAY — SPREAD ZOOM';
+    showBadge('🙌 ZOOM '+(6/targetDist).toFixed(1)+'×');
     return;
   }
 
-  // ── MỘT TAY ────────────────────────────────────────────────────────────
-  // Reset two-hand state khi quay về 1 tay
-  if (twoHandActive) {
-    twoHandActive = false; twoHandStartDist = null; twoHandStartZoomDist = null;
+  // ── Một tay ──────────────────────────────────────────────
+  if(spreadActive){
+    spreadActive=false; spreadStartDist=null; spreadStartZoomDist=null;
   }
 
-  const lm      = results.multiHandLandmarks[0];
-  const gesture = recognizeGesture(lm);
+  const lm=lms[0];
+  const g=classifyGesture(lm);
+  drawSkeleton(ctx,lm,W,H,'#c084fc');
 
-  drawHandSkeleton(ctx, lm, 200, 130, gesture);
+  // Vị trí trung tâm bàn tay (MIDDLE_MCP, mirrored)
+  const cx=1-lm[9].x, cy=lm[9].y;
 
-  // Glow cursor (mirrored)
-  const wx = (1 - lm[0].x) * window.innerWidth;
-  const wy = lm[0].y * window.innerHeight;
-  hGlow.style.display = 'block';
-  hGlow.style.left = wx + 'px';
-  hGlow.style.top  = wy + 'px';
+  // Glow cursor
+  elHglow.style.display='block';
+  elHglow.style.left=(1-lm[0].x)*innerWidth+'px';
+  elHglow.style.top =lm[0].y*innerHeight+'px';
 
-  document.getElementById('s-gesture').textContent = gesture.icon + ' ' + gesture.name;
+  elSgest.textContent=g.e+' '+g.n;
+  elHstat.textContent=g.e+' '+g.n+' DETECTED';
 
-  // Trung tâm bàn tay (MIDDLE_MCP, mirrored)
-  const cx = 1 - lm[9].x;
-  const cy = lm[9].y;
+  // ── Áp dụng gesture ──────────────────────────────────────
+  if(g.n==='OK' && gestureCooldown===0){
+    targetAz=0; targetEl=25; targetDist=6;
+    pinchActive=false; pinchStartRel=null; pinchStartDist=null;
+    prevCX=null; prevCY=null;
+    showBadge('👌 RESET CAMERA');
+    gestureCooldown=45;
 
-  // ── Áp dụng gesture ────────────────────────────────────────────────────
-  if (gesture.name === 'OK' && gestureCooldown === 0) {
-    targetAz = 0; targetEl = 25; targetDist = 6;
-    // FIX BUG 5: Reset pinch state khi reset camera
-    pinchActive = false; pinchStartRelDist = null; pinchStartZoomDist = null;
-    showGestureBadge('👌 RESET CAMERA');
-    gestureCooldown = 40;
-
-  } else if (gesture.name === 'PINCH') {
-    const relDist = gesture.pinchDist / Math.max(gesture.handSize, 0.01);
-    // FIX BUG 5: Snapshot chỉ 1 lần khi bắt đầu pinch
-    if (!pinchActive) {
-      pinchActive = true;
-      pinchStartRelDist  = relDist;
-      pinchStartZoomDist = targetDist;
+  } else if(g.n==='PINCH'){
+    const rel=g.pd/Math.max(g.hs,0.001);
+    if(!pinchActive){
+      pinchActive=true;
+      pinchStartRel=rel;
+      pinchStartDist=targetDist;
     }
-    const delta = (pinchStartRelDist - relDist) * 20;
-    targetDist = Math.max(2.0, Math.min(16, pinchStartZoomDist + delta));
-    showGestureBadge('🤏 ZOOM ' + (6/targetDist).toFixed(1) + 'x');
+    const delta=(pinchStartRel-rel)*22;
+    targetDist=Math.max(2.0,Math.min(18, pinchStartDist+delta));
+    showBadge('🤏 ZOOM '+(6/targetDist).toFixed(1)+'×');
 
   } else {
-    // FIX BUG 5: Reset pinch khi ra khỏi PINCH gesture
-    pinchActive = false; pinchStartRelDist = null; pinchStartZoomDist = null;
+    // Reset pinch khi ra khỏi PINCH
+    if(pinchActive){ pinchActive=false; pinchStartRel=null; pinchStartDist=null; }
 
-    if (gesture.name === 'FIST' || gesture.name === 'POINT') {
-      if (prevHandX !== null) {
-        const dx = (cx - prevHandX) * 200;
-        const dy = (cy - prevHandY) * 140;
-        targetAz += dx * 2.5;
-        targetEl  = Math.max(-85, Math.min(85, targetEl - dy * 2.0));
+    if(g.n==='FIST'||g.n==='POINT'){
+      if(prevCX!==null){
+        const dx=(cx-prevCX)*220, dy=(cy-prevCY)*160;
+        targetAz  +=dx*2.8;
+        targetEl   =Math.max(-85,Math.min(85, targetEl-dy*2.2));
       }
-    } else if (gesture.name === 'PEACE') {
-      targetAz += 1.4;
-      showGestureBadge('✌️ TURBO ORBIT');
-    } else if (gesture.name === 'OPEN') {
-      targetAz += 0.35; // float drift
-    } else {
-      // NEUTRAL: điều hướng nhẹ theo tay
-      if (prevHandX !== null) {
-        const dx = (cx - prevHandX) * 100;
-        const dy = (cy - prevHandY) * 80;
-        targetAz += dx * 1.5;
-        targetEl  = Math.max(-85, Math.min(85, targetEl - dy * 1.5));
+    } else if(g.n==='PEACE'){
+      targetAz+=1.6;
+      showBadge('✌️ TURBO');
+    } else if(g.n==='OPEN'){
+      targetAz+=0.3;
+    } else if(g.n==='NEUTRAL'){
+      if(prevCX!==null){
+        const dx=(cx-prevCX)*120, dy=(cy-prevCY)*90;
+        targetAz  +=dx*1.2;
+        targetEl   =Math.max(-85,Math.min(85,targetEl-dy*1.2));
       }
     }
   }
 
-  prevHandX = cx;
-  prevHandY = cy;
+  prevCX=cx; prevCY=cy;
 }
 
-// ─── DRAW HAND SKELETON ───────────────────────────────────────────────────
-function drawHandSkeleton(ctx, lm, w, h, gesture) {
-  const CONNECTIONS = [
-    [0,1],[1,2],[2,3],[3,4],
-    [0,5],[5,6],[6,7],[7,8],
-    [0,9],[9,10],[10,11],[11,12],
-    [0,13],[13,14],[14,15],[15,16],
-    [0,17],[17,18],[18,19],[19,20],
-    [5,9],[9,13],[13,17]
-  ];
-  const px = lm.map(p => [(1-p.x)*w, p.y*h]);
+// ═══════════════════════════════════════════════════════════
+// DRAW HAND SKELETON ON MINI CANVAS
+// ═══════════════════════════════════════════════════════════
+const CONNECTIONS=[
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [0,9],[9,10],[10,11],[11,12],
+  [0,13],[13,14],[14,15],[15,16],
+  [0,17],[17,18],[18,19],[19,20],
+  [5,9],[9,13],[13,17]
+];
 
-  ctx.strokeStyle = gesture ? 'rgba(192,132,252,0.55)' : 'rgba(56,189,248,0.4)';
-  ctx.lineWidth = 1.5;
-  CONNECTIONS.forEach(([a,b]) => {
-    ctx.beginPath(); ctx.moveTo(px[a][0], px[a][1]);
-    ctx.lineTo(px[b][0], px[b][1]); ctx.stroke();
-  });
+function drawSkeleton(ctx, lm, W, H, color) {
+  // Convert normalized → canvas pixels (mirrored X)
+  const pts=lm.map(p=>[(1-p.x)*W, p.y*H]);
 
-  px.forEach(([x, y], i) => {
-    const isTip = [4,8,12,16,20].includes(i);
-    ctx.beginPath(); ctx.arc(x, y, isTip ? 3.5 : 2, 0, Math.PI*2);
-    ctx.fillStyle = isTip ? '#f472b6' : '#c084fc';
-    ctx.fill();
-  });
-}
-
-// ─── GESTURE BADGE ────────────────────────────────────────────────────────
-function showGestureBadge(text) {
-  const badge = document.getElementById('gesture-badge');
-  badge.textContent = text;
-  badge.classList.add('show');
-  clearTimeout(gestureTimer);
-  gestureTimer = setTimeout(() => badge.classList.remove('show'), 1800);
-}
-
-// ─── RENDER LOOP (FIX BUG 6: cập nhật time cho tất cả ShaderMaterial) ────
-let time = 0;
-function animate() {
-  requestAnimationFrame(animate);
-  time += 0.008;
-
-  // FPS counter
-  frameCount++;
-  const now = performance.now();
-  if (now - lastFpsTime > 1000) {
-    document.getElementById('fps-badge').textContent =
-      Math.round(frameCount * 1000 / (now - lastFpsTime)) + ' FPS';
-    frameCount = 0; lastFpsTime = now;
+  // Lines
+  ctx.strokeStyle=color+'99';
+  ctx.lineWidth=1.5;
+  for(const [a,b] of CONNECTIONS){
+    ctx.beginPath();
+    ctx.moveTo(pts[a][0],pts[a][1]);
+    ctx.lineTo(pts[b][0],pts[b][1]);
+    ctx.stroke();
   }
 
-  if (autoRotate) targetAz += 0.07;
-
-  // Smooth interpolation
-  azimuth   += (targetAz   - azimuth)   * 0.06;
-  elevation += (targetEl   - elevation) * 0.06;
-  distance  += (targetDist - distance)  * 0.06;
-
-  updateCamera();
-
-  // HUD
-  document.getElementById('s-az').textContent   = Math.round(((azimuth % 360) + 360) % 360) + '°';
-  document.getElementById('s-el').textContent   = Math.round(elevation) + '°';
-  document.getElementById('s-zoom').textContent = (6 / distance).toFixed(1) + 'x';
-
-  // FIX BUG 6: Cập nhật time uniform cho TẤT CẢ ShaderMaterial
-  if (galaxyMesh)       galaxyMesh.material.uniforms.time.value       = time;
-  if (nebulaParticles)  nebulaParticles.material.uniforms.time.value  = time;
-  if (coreGlow)         coreGlow.material.uniforms.time.value         = time;
-
-  // Rotate galaxy layers (FIX BUG 7: dustCloud dùng rotation trực tiếp, không cần uniform)
-  if (galaxyMesh)      galaxyMesh.rotation.y      =  time * 0.05;
-  if (nebulaParticles) nebulaParticles.rotation.y =  time * 0.03;
-  if (dustCloud)       dustCloud.rotation.y       = -time * 0.02;
-  if (coreGlow)        coreGlow.rotation.y        =  time * 0.04;
-
-  renderer.render(scene, camera3D);
+  // Joints
+  const TIPS=[4,8,12,16,20];
+  for(let i=0;i<pts.length;i++){
+    const isTip=TIPS.includes(i);
+    ctx.beginPath();
+    ctx.arc(pts[i][0],pts[i][1],isTip?3.5:2,0,Math.PI*2);
+    ctx.fillStyle=isTip?'#f472b6':color;
+    ctx.fill();
+  }
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────
-async function init() {
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function setLoad(msg, pct){
+  elLs.textContent=msg;
+  elLb.style.width=pct+'%';
+}
+
+function showBadge(txt){
+  elBadge.textContent=txt;
+  elBadge.classList.add('show');
+  clearTimeout(gestureFlashTimer);
+  gestureFlashTimer=setTimeout(()=>elBadge.classList.remove('show'),1800);
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAIN INIT
+// ═══════════════════════════════════════════════════════════
+async function main(){
+  // Three.js init & render loop
   initThree();
-  animate();
+  renderLoop();
+
+  setLoad('Three.js sẵn sàng...', 10);
+
   try {
     await loadMediaPipe();
-    loaderBar.style.width = '80%';
-    loadStatus.textContent = 'Sẵn sàng! Nhấn để bắt đầu';
-    document.getElementById('btn-start').style.display = 'block';
-  } catch (e) {
-    loadStatus.textContent = '⚠️ ' + e.message;
-    document.getElementById('btn-start').style.display = 'block';
-    document.getElementById('btn-start').textContent = 'Tiếp tục (không tay)';
+    setLoad('✓ MediaPipe loaded! Nhấn BẮT ĐẦU', 80);
+    elBtn.style.display='block';
+  } catch(e){
+    setLoad('⚠️ Lỗi tải MediaPipe: '+e.message, 80);
+    elBtn.style.display='block';
+    elBtn.textContent='Tiếp tục (xem galaxy)';
   }
 }
 
-async function startExperience() {
-  loaderBar.style.width = '85%';
-  loadStatus.textContent = 'Đang khởi động camera...';
-  try {
+async function startExp(){
+  elBtn.style.display='none';
+  setLoad('Đang mở camera...', 85);
+  try{
     await initHandTracking();
-    loaderBar.style.width = '100%';
-    loadStatus.textContent = '✨ Thiên hà sẵn sàng!';
-    await new Promise(r => setTimeout(r, 500));
+    setLoad('✨ Sẵn sàng!', 100);
+    await new Promise(r=>setTimeout(r,500));
     document.getElementById('loading').classList.add('hidden');
-    showGestureBadge('🌌 THIÊN HÀ ĐÃ SẴN SÀNG');
-  } catch (e) {
-    loadStatus.textContent = '⚠️ Không có camera: ' + e.message;
-    await new Promise(r => setTimeout(r, 1200));
+    showBadge('🌌 NEBULA SẴN SÀNG');
+  } catch(e){
+    if(e.name==='NotAllowedError'){
+      setLoad('⚠️ Cần cấp quyền camera để dùng hand tracking', 85);
+    } else {
+      setLoad('⚠️ Camera: '+e.message, 85);
+    }
+    await new Promise(r=>setTimeout(r,2000));
     document.getElementById('loading').classList.add('hidden');
   }
 }
 
-init();
+main();
 </script>
 </body>
 </html>
